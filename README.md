@@ -1,4 +1,7 @@
-# iPlayer935
+<p align="center">
+  <img src="Resources/AppIcon-60@3x.png" alt="iPlayer935" width="180" height="180">
+</p>
+<h1 align="center">iPlayer935</h1>
 
 [English](README.md) · [Español](README.es.md) · [简体中文](README.zh-CN.md)
 
