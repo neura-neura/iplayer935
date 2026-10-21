@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key><string>en</string>
+	<key>CFBundleDisplayName</key><string>iPlayer935</string>
+	<key>CFBundleExecutable</key><string>iPlayer935</string>
+	<key>CFBundleIdentifier</key><string>org.neura.iplayer935</string>
+	<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+	<key>CFBundleName</key><string>iPlayer935</string>
+	<key>CFBundlePackageType</key><string>APPL</string>
+	<key>CFBundleShortVersionString</key><string>1.0</string>
+	<key>CFBundleVersion</key><string>30</string>
+	<key>IPRepositoryURL</key><string>https://github.com/neura-neura/iplayer935</string>
+	<key>CFBundleIcons</key>
+	<dict><key>CFBundlePrimaryIcon</key><dict>
+		<key>CFBundleIconFiles</key><array><string>AppIcon</string><string>AppIcon-60</string><string>AppIcon-29</string><string>AppIcon-40</string></array>
+		<key>UIPrerenderedIcon</key><true/>
+	</dict></dict>
+	<key>CFBundleLocalizations</key><array><string>en</string><string>es</string><string>zh-Hans</string></array>
+	<key>LSRequiresIPhoneOS</key><true/>
+	<key>MinimumOSVersion</key><string>9.3.5</string>
+	<key>UIDeviceFamily</key><array><integer>1</integer></array>
+	<key>UIRequiredDeviceCapabilities</key><array><string>armv7</string></array>
+	<key>UIStatusBarHidden</key><false/>
+	<key>UIRequiresFullScreen</key><true/>
+	<key>UIFileSharingEnabled</key><true/>
+	<key>UIInterfaceOrientation</key><string>UIInterfaceOrientationPortrait</string>
+	<key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string></array>
+	<key>UILaunchImages</key>
+	<array>
+		<dict>
+			<key>UILaunchImageMinimumOSVersion</key><string>7.0</string>
+			<key>UILaunchImageName</key><string>Default-568h</string>
+			<key>UILaunchImageOrientation</key><string>Portrait</string>
+			<key>UILaunchImageSize</key><string>{320, 568}</string>
+		</dict>
+	</array>
+	<key>UIBackgroundModes</key><array><string>audio</string></array>
+	<key>UIFileSharingEnabled</key><true/>
+	<key>NSAppTransportSecurity</key>
+	<dict><key>NSAllowsArbitraryLoads</key><true/></dict>
+</dict>
+</plist>

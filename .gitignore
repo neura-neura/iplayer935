@@ -1,0 +1,8 @@
+build/
+toolchain/
+.DS_Store
+*.part
+
+# Generated downloads are published as GitHub release assets.
+deliverables/*.ipa
+deliverables/*-source.zip
