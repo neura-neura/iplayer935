@@ -2,6 +2,7 @@
 #import "IPCrossfadeSettings.h"
 #import "IPCrossfade.h"
 #import "IPPlayer.h"
+#import "IPLegacyAppearance.h"
 @interface IPFadeGraph : UIView
 @property(nonatomic) IPFadeCurve curve;
 @end
@@ -10,7 +11,13 @@
     CGContextRef c=UIGraphicsGetCurrentContext();CGRect plot=CGRectInset(self.bounds,14,16);
     CGContextSetStrokeColorWithColor(c,[UIColor colorWithWhite:.85 alpha:1].CGColor);CGContextSetLineWidth(c,.5);
     for(int i=0;i<=4;i++){CGFloat y=plot.origin.y+plot.size.height*i/4;CGContextMoveToPoint(c,plot.origin.x,y);CGContextAddLineToPoint(c,CGRectGetMaxX(plot),y);}CGContextStrokePath(c);
-    NSArray *colors=@[[UIColor colorWithRed:1 green:.18 blue:.33 alpha:1],[UIColor colorWithRed:0 green:.6 blue:.6 alpha:1]];
+    NSArray *colors=@[
+#if defined(IP_IOS6)
+IPLegacyAccent(),
+#else
+[UIColor colorWithRed:1 green:.18 blue:.33 alpha:1],
+#endif
+[UIColor colorWithRed:0 green:.6 blue:.6 alpha:1]];
     for(int channel=0;channel<2;channel++){CGContextSetStrokeColorWithColor(c,[colors[channel]CGColor]);CGContextSetLineWidth(c,2);
         for(int i=0;i<=48;i++){float out,in;IPFadeGains(i/48.,self.curve,&out,&in);CGFloat x=plot.origin.x+plot.size.width*i/48,y=CGRectGetMaxY(plot)-plot.size.height*(channel?in:out);if(i==0)CGContextMoveToPoint(c,x,y);else CGContextAddLineToPoint(c,x,y);}CGContextStrokePath(c);
     }
@@ -34,6 +41,9 @@
 - (NSInteger)tableView:(UITableView *)table numberOfRowsInSection:(NSInteger)section {return section==0?1:2;}
 - (NSString *)tableView:(UITableView *)table titleForHeaderInSection:(NSInteger)section {return @[IPL(@"Activación"),IPL(@"Mezcla"),IPL(@"Cuándo aplicarlo"),IPL(@"Control de sesión")][section];}
 - (NSString *)tableView:(UITableView *)table titleForFooterInSection:(NSInteger)section {
+#if defined(IP_IOS6)
+    if(section==1)return IPL(@"Orange: outgoing track. Green: incoming track. Equal power keeps the mix energy constant; linear reduces both volumes evenly.");
+#endif
     if(section==1)return IPL(@"Rosa: canción saliente. Verde: entrante. Potencia constante conserva la energía de la mezcla; lineal reduce ambos volúmenes de forma uniforme.");
     if(section==3)return IPL(@"Mantén pulsadas las flechas de aleatorio en Reproduciendo para suspender o reanudar el efecto durante esta sesión. Un toque sigue cambiando el modo aleatorio. Solo se abren dos canciones durante la transición; la duración efectiva puede ser menor con canciones cortas o si la conexión tarda.");
     return nil;

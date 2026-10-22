@@ -1,6 +1,7 @@
 #import "IPStrings.h"
 #import "IPLocalLibrary.h"
 #import "IPNow.h"
+#import "IPLegacyAppearance.h"
 #import "IPPlayer.h"
 #import "IPControlIcons.h"
 #import "IPCrossfade.h"
@@ -8,11 +9,23 @@
 #import "IPStore.h"
 #import <MediaPlayer/MediaPlayer.h>
 
-static UIColor *IPAccent(void) { return [UIColor colorWithRed:1 green:.18 blue:.33 alpha:1]; }
+static UIColor *IPAccent(void) {
+#if defined(IP_IOS6)
+    return IPLegacyAccent();
+#else
+    return [UIColor colorWithRed:1 green:.18 blue:.33 alpha:1];
+#endif
+}
 static UIImage *IPSymbol(NSInteger kind, BOOL active) {
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(40, 40), NO, 0);
     CGContextRef c = UIGraphicsGetCurrentContext();
-    CGContextSetFillColorWithColor(c, [UIColor colorWithWhite:.17 alpha:1].CGColor);
+    CGContextSetFillColorWithColor(c, [UIColor colorWithWhite:
+#if defined(IP_IOS6)
+.88
+#else
+.17
+#endif
+alpha:1].CGColor);
     if (kind == 1 && active) {
         CGContextFillRect(c, CGRectMake(11, 8, 6, 24));
         CGContextFillRect(c, CGRectMake(23, 8, 6, 24));
@@ -64,6 +77,11 @@ static UIImage *IPPlaceholder(void) {
 @property(nonatomic, strong) NSTimer *timer;
 @property(nonatomic, copy) NSString *artKey;
 @property(nonatomic, strong) UIImage *placeholder, *playIcon, *pauseIcon;
+#if defined(IP_IOS6)
+@property(nonatomic,strong) UIView *scrubPanel,*transportPanel;
+@property(nonatomic,strong) UILabel *albumLabel;
+@property(nonatomic,strong) UIImage *shuffleOff,*shuffleOn;
+#endif
 @end
 @implementation IPNow
 - (instancetype)init {
@@ -75,6 +93,9 @@ static UIImage *IPPlaceholder(void) {
     UILabel *l = [UILabel new];
     l.font = [UIFont systemFontOfSize:size];
     l.textColor = color;
+#if defined(IP_IOS6)
+    l.backgroundColor=[UIColor clearColor];
+#endif
     l.textAlignment = NSTextAlignmentCenter;
     [self.view addSubview:l];
     return l;
@@ -166,11 +187,54 @@ static UIImage *IPPlaceholder(void) {
                                              selector:@selector(refresh)
                                                  name:@"IPStoreChanged"
                                                object:nil];
+#if defined(IP_IOS6)
+    [self installLegacyPlayerAppearance];
+#endif
     [self refresh];
 }
+#if defined(IP_IOS6)
+- (void)installLegacyPlayerAppearance {
+    self.view.backgroundColor=[UIColor blackColor];self.art.backgroundColor=[UIColor colorWithWhite:.08 alpha:1];
+    UINavigationBar *bar=self.navigationController.navigationBar;bar.barStyle=UIBarStyleBlack;bar.tintColor=[UIColor colorWithWhite:.14 alpha:1];
+    [bar setBackgroundImage:IPLegacySurface(YES) forBarMetrics:UIBarMetricsDefault];
+    bar.titleTextAttributes=@{UITextAttributeTextColor:[UIColor whiteColor],UITextAttributeTextShadowColor:[UIColor blackColor]};
+    UIView *heading=[[UIView alloc]initWithFrame:CGRectMake(0,0,180,43)];
+    [heading addSubview:self.titleLabel];[heading addSubview:self.subtitle];
+    self.titleLabel.font=[UIFont boldSystemFontOfSize:13];self.titleLabel.textColor=[UIColor whiteColor];self.titleLabel.frame=CGRectMake(0,13,180,16);
+    self.subtitle.font=[UIFont boldSystemFontOfSize:10];self.subtitle.textColor=[UIColor lightGrayColor];self.subtitle.frame=CGRectMake(0,0,180,13);
+    self.albumLabel=[UILabel new];self.albumLabel.font=[UIFont boldSystemFontOfSize:10];self.albumLabel.textColor=[UIColor lightGrayColor];self.albumLabel.backgroundColor=[UIColor clearColor];self.albumLabel.textAlignment=NSTextAlignmentCenter;self.albumLabel.frame=CGRectMake(0,29,180,13);[heading addSubview:self.albumLabel];
+    heading.autoresizingMask=UIViewAutoresizingFlexibleWidth;self.navigationItem.titleView=heading;
+    self.scrubPanel=[UIView new];self.scrubPanel.backgroundColor=[UIColor colorWithWhite:0 alpha:.72];[self.view addSubview:self.scrubPanel];
+    for(UIView *view in @[self.slider,self.elapsed,self.remaining])[self.scrubPanel addSubview:view];
+    self.elapsed.textColor=[UIColor lightGrayColor];self.remaining.textColor=[UIColor lightGrayColor];
+    // Native iOS 6 sliders supply the metallic knob, including the volume slider.
+    [self.slider setThumbImage:nil forState:UIControlStateNormal];self.slider.minimumTrackTintColor=[UIColor lightGrayColor];self.slider.maximumTrackTintColor=[UIColor colorWithWhite:.25 alpha:1];
+    self.transportPanel=[[UIImageView alloc]initWithImage:IPLegacySurface(YES)];self.transportPanel.userInteractionEnabled=YES;[self.view insertSubview:self.transportPanel aboveSubview:self.art];
+    for(UIButton *button in @[self.previous,self.play,self.next]){
+        [button setBackgroundImage:IPLegacyButton(NO) forState:UIControlStateNormal];[button setBackgroundImage:IPLegacyButton(YES) forState:UIControlStateHighlighted];[button setBackgroundImage:IPLegacyButton(YES) forState:UIControlStateSelected];
+    }
+    for(UIButton *button in @[self.favorite,self.queueButton]){[button setTitleColor:[UIColor lightGrayColor] forState:UIControlStateNormal];[button setTitleShadowColor:[UIColor blackColor] forState:UIControlStateNormal];button.titleLabel.shadowOffset=CGSizeMake(0,-1);}
+    self.shuffleOff=IPLegacyTint(IPControlImage(IPControlIconShuffle),[UIColor lightGrayColor]);self.shuffleOn=IPLegacyTint(IPControlImage(IPControlIconShuffle),IPLegacyAccent());
+    self.origin.textColor=[UIColor colorWithWhite:.55 alpha:1];self.origin.font=[UIFont systemFontOfSize:9];
+    self.art.userInteractionEnabled=YES;UITapGestureRecognizer *tap=[[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(toggleLegacyScrubber)];[self.art addGestureRecognizer:tap];
+}
+- (void)toggleLegacyScrubber {self.scrubPanel.hidden=!self.scrubPanel.hidden;}
+#endif
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
     CGFloat w = self.view.bounds.size.width, h = self.view.bounds.size.height;
+#if defined(IP_IOS6)
+    CGFloat art=MIN(w,MAX(100,h-174));
+    self.art.frame=CGRectMake((w-art)/2,0,art,art);
+    self.scrubPanel.frame=CGRectMake((w-art)/2,0,art,49);
+    self.slider.frame=CGRectMake(20,0,art-40,29);self.elapsed.frame=CGRectMake(22,29,70,15);self.remaining.frame=CGRectMake(art-92,29,70,15);
+    self.transportPanel.frame=CGRectMake(0,art,w,h-art);
+    CGFloat width=MIN(88,(w-24)/3),left=(w-width*3)/2;
+    self.previous.frame=CGRectMake(left,art+7,width,49);self.play.frame=CGRectMake(left+width,art+7,width,49);self.next.frame=CGRectMake(left+2*width,art+7,width,49);
+    self.volume.frame=CGRectMake(30,art+64,w-60,30);
+    self.favorite.frame=CGRectMake(24,art+101,46,42);self.shuffleButton.frame=CGRectMake(w/2-23,art+101,46,42);self.queueButton.frame=CGRectMake(w-70,art+101,46,42);
+    self.origin.frame=CGRectMake(12,h-22,w-24,15);
+#else
     CGFloat art = MIN(w - 40, MAX(160, h - 258));
     self.art.frame = CGRectMake((w - art) / 2, 10, art, art);
     CGFloat y = art + 20;
@@ -187,6 +251,7 @@ static UIImage *IPPlaceholder(void) {
     self.favorite.frame = CGRectMake(19, h - 44, 46, 40);
     self.queueButton.frame = CGRectMake(w - 65, h - 44, 46, 40);
     self.shuffleButton.frame=CGRectMake(w/2-23,h-44,46,40);
+#endif
 }
 #if defined(IP_IOS6)
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gesture {
@@ -219,6 +284,9 @@ static UIImage *IPPlaceholder(void) {
                          : artist.length ? artist
                          : album.length  ? album
                                          : @"";
+#if defined(IP_IOS6)
+    self.subtitle.text=artist?:@"";self.albumLabel.text=album?:@"";
+#endif
     NSDictionary *profile = [[IPStore shared] profileForTrack:t];
     self.origin.text=[NSString stringWithFormat:@"%@%@",[[IPStore shared]localURL:t]?IPL(@"En el iPod · "):@"",IPProfileName(profile)?:t[@"sourceName"]?:@""];
     if(p.seeking)self.origin.text=[self.origin.text stringByAppendingString:IPL(@" · Buscando…")];
@@ -238,6 +306,11 @@ static UIImage *IPPlaceholder(void) {
                               : @"–:––";
     [self.play setImage:p.playing ? self.pauseIcon : self.playIcon forState:0];
     [self.favorite setTitle:[t[@"favorite"] boolValue] ? @"♥" : @"♡" forState:0];
+#if defined(IP_IOS6)
+    self.play.selected=p.playing;
+    [self.favorite setTitleColor:[t[@"favorite"]boolValue]?IPLegacyAccent():[UIColor lightGrayColor] forState:UIControlStateNormal];
+    [self.shuffleButton setImage:p.shuffleEnabled?self.shuffleOn:self.shuffleOff forState:UIControlStateNormal];
+#endif
     self.shuffleButton.tintColor=p.shuffleEnabled?IPAccent():[UIColor grayColor];
     self.shuffleButton.backgroundColor=p.shuffleEnabled?[IPAccent() colorWithAlphaComponent:.12]:[UIColor clearColor];
     self.shuffleButton.accessibilityValue=p.shuffleEnabled?IPL(@"Activada"):IPL(@"Desactivada");

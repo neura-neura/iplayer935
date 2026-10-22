@@ -6,6 +6,7 @@
 #import "IPCodecCheck.h"
 #import "IPNow.h"
 #import "IPControlIcons.h"
+#import "IPLegacyAppearance.h"
 #import "IPMiniRoot.h"
 #import "IPLibraryDB.h"
 #import "IPLibraryPreparation.h"
@@ -177,6 +178,11 @@ static void Message(UIViewController *v, NSString *s) {
 }
 - (void)viewDidLoad {
     [super viewDidLoad];
+#if defined(IP_IOS6)
+    self.tableView.backgroundColor=[UIColor colorWithWhite:.92 alpha:1];
+    self.tableView.separatorColor=[UIColor colorWithWhite:.78 alpha:1];
+    self.tableView.rowHeight=48;
+#endif
     NSString *preference=[@"sort-" stringByAppendingString:self.playlist[@"id"]?:self.profile[@"id"]?:self.mode?:@"library"];
     self.sortKey=[[NSUserDefaults standardUserDefaults]stringForKey:preference] ?: (self.playlist?@"playlist":@"title");
     self.selectedTrackIDs=[NSMutableOrderedSet new];
@@ -323,6 +329,12 @@ static void Message(UIViewController *v, NSString *s) {
         c = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle
                                    reuseIdentifier:@"row"];
     if((NSUInteger)p.row>=self.rows.count){c.textLabel.text=IPL(@"Cargando más canciones…");c.detailTextLabel.text=nil;c.accessoryType=UITableViewCellAccessoryNone;c.selectionStyle=UITableViewCellSelectionStyleNone;return c;}
+#if defined(IP_IOS6)
+    c.textLabel.font=[UIFont boldSystemFontOfSize:16];
+    c.detailTextLabel.font=[UIFont systemFontOfSize:12];
+    c.detailTextLabel.textColor=[UIColor grayColor];
+    c.backgroundColor=[UIColor colorWithWhite:.92 alpha:1];
+#endif
     c.selectionStyle=UITableViewCellSelectionStyleDefault;
     NSDictionary *r = self.rows[p.row];
     BOOL server = [self.mode isEqual:@"servers"], list = [self.mode isEqual:@"playlists"];
@@ -804,7 +816,12 @@ static void Message(UIViewController *v, NSString *s) {
 @implementation IPAppDelegate
 - (BOOL)application:(UIApplication *)app didFinishLaunchingWithOptions:(NSDictionary *)opts {
     self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+#if defined(IP_IOS6)
+    IPLegacyInstallAppearance();
+    [[UIApplication sharedApplication]setStatusBarStyle:UIStatusBarStyleBlackOpaque];
+#else
     self.window.tintColor = [UIColor colorWithRed:1 green:.18 blue:.33 alpha:1];
+#endif
     [self installInterfaceShowingLanguageSettings:NO];
     [self.window makeKeyAndVisible];
     [app beginReceivingRemoteControlEvents];

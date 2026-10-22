@@ -346,3 +346,5 @@
 "Saving library: %lu of %lu" = "Guardando biblioteca: %lu de %lu";
 
 "Could not save library." = "No se pudo guardar la biblioteca.";
+
+"Orange: outgoing track. Green: incoming track. Equal power keeps the mix energy constant; linear reduces both volumes evenly." = "Naranja: canción saliente. Verde: entrante. Potencia constante conserva la energía de la mezcla; lineal reduce ambos volúmenes de forma uniforme.";

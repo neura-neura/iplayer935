@@ -3,6 +3,14 @@
 UIImage *IPControlImage(IPControlIcon kind) {
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(26,26),NO,0);
     CGContextRef c=UIGraphicsGetCurrentContext();CGContextSetLineWidth(c,1.8);CGContextSetLineCap(c,kCGLineCapRound);CGContextSetLineJoin(c,kCGLineJoinRound);
+#if defined(IP_IOS6)
+    if(kind==IPControlIconOptions){
+        // Compact settings wheel suits the native embossed bar-button treatment.
+        CGContextSetLineWidth(c,4);
+        for(int i=0;i<8;i++){CGFloat a=i*M_PI/4;CGContextMoveToPoint(c,13+7*cos(a),13+7*sin(a));CGContextAddLineToPoint(c,13+11*cos(a),13+11*sin(a));}CGContextStrokePath(c);
+        CGContextSetLineWidth(c,3);CGContextStrokeEllipseInRect(c,CGRectMake(6,6,14,14));
+    }else
+#endif
     if(kind==IPControlIconOptions){
         CGContextStrokeEllipseInRect(c,CGRectMake(2,2,22,22));
         for(int i=0;i<3;i++)CGContextFillEllipseInRect(c,CGRectMake(6+i*6,11.5,3,3));

@@ -1,12 +1,19 @@
 #import "IPStrings.h"
 #import "IPMiniRoot.h"
 #import "IPNow.h"
+#import "IPLegacyAppearance.h"
 #import "IPPlayer.h"
 #import "IPStore.h"
 #import <math.h>
 static UIImage *MiniSymbol(NSInteger kind) {
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(32,32),NO,0);
-    CGContextRef c=UIGraphicsGetCurrentContext();CGContextSetFillColorWithColor(c,[UIColor colorWithRed:1 green:.18 blue:.33 alpha:1].CGColor);
+    CGContextRef c=UIGraphicsGetCurrentContext();CGContextSetFillColorWithColor(c,
+#if defined(IP_IOS6)
+[UIColor colorWithWhite:.2 alpha:1].CGColor
+#else
+[UIColor colorWithRed:1 green:.18 blue:.33 alpha:1].CGColor
+#endif
+);
     if(kind==1){CGContextFillRect(c,CGRectMake(9,7,4,18));CGContextFillRect(c,CGRectMake(19,7,4,18));}
     else if(kind==2){for(int i=0;i<3;i++)CGContextFillEllipseInRect(c,CGRectMake(6+i*8,14,4,4));}
     else {CGContextMoveToPoint(c,11,6);CGContextAddLineToPoint(c,26,16);CGContextAddLineToPoint(c,11,26);CGContextClosePath(c);CGContextFillPath(c);}
@@ -42,6 +49,12 @@ UIButtonTypeSystem
 #endif
 ];[self.nextButton setImage:MiniSymbol(2) forState:0];self.nextButton.accessibilityLabel=IPL(@"Más opciones de reproducción");[self.nextButton addTarget:self action:@selector(more) forControlEvents:UIControlEventTouchUpInside];[self.mini addSubview:self.nextButton];
     self.progress=[UIView new];self.progress.backgroundColor=[UIColor colorWithRed:1 green:.18 blue:.33 alpha:1];[self.mini addSubview:self.progress];
+#if defined(IP_IOS6)
+    UIImageView *surface=[[UIImageView alloc]initWithImage:IPLegacySurface(NO)];surface.frame=self.mini.bounds;surface.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;[self.mini insertSubview:surface atIndex:0];
+    self.song.backgroundColor=[UIColor clearColor];self.artist.backgroundColor=[UIColor clearColor];
+    self.song.font=[UIFont boldSystemFontOfSize:13];self.song.textColor=[UIColor colorWithWhite:.15 alpha:1];
+    self.progress.backgroundColor=IPLegacyAccent();
+#endif
     [self.view addSubview:self.mini];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refresh) name:@"IPPlaybackChanged" object:nil];
     [self refresh];

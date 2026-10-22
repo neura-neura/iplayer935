@@ -346,3 +346,5 @@
 "Saving library: %lu of %lu" = "正在保存曲库：%lu / %lu";
 
 "Could not save library." = "无法保存曲库。";
+
+"Orange: outgoing track. Green: incoming track. Equal power keeps the mix energy constant; linear reduces both volumes evenly." = "橙色：淡出曲目。绿色：淡入曲目。恒定功率曲线保持混音能量恒定；线性曲线均匀降低两者的音量。";

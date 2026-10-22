@@ -70,7 +70,7 @@ if ! "$CLANG" "${SDK_FLAGS[@]}" "${OBJS[@]}" \
 cp "$ROOT/scripts/Info.plist" "$APP/Info.plist"
 if [[ "$LEGACY" == 1 ]]; then
   /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 6.1.3" "$APP/Info.plist"
-  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 37" "$APP/Info.plist"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 38" "$APP/Info.plist"
 fi
 mkdir -p "$APP/LICENCES" "$ROOT/deliverables/licences"
 cp "$ROOT/Vendor/libsmb2/COPYING" "$ROOT/Vendor/libsmb2/LICENCE-LGPL-2.1.txt" "$APP/LICENCES/"
