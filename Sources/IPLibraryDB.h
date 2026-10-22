@@ -45,6 +45,11 @@
 @property(nonatomic, copy, readonly) NSArray *materializedTracks;
 @property(nonatomic, copy, readonly) NSArray *changedTracks;
 - (void)acknowledgeTracks:(NSArray *)records;
+#if defined(IP_IOS6)
+/** Merge tags only into already visible/resolved objects; never hydrate the whole library. */
+- (void)mergeMaterializedMetadata:(NSArray *)updates acknowledged:(BOOL)acknowledged;
+- (nullable NSMutableDictionary *)materializedTrackForID:(NSString *)tid;
+#endif
 - (NSMutableDictionary *)trackForID:(NSString *)tid;
 - (NSArray *)materializeIDs:(NSArray *)ids;
 - (NSArray *)materializeRecords:(NSArray *)records;

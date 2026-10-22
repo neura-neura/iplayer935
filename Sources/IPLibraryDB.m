@@ -615,6 +615,21 @@ static BOOL NeedsTags(NSDictionary *t) {
         if ([_members containsObject:t[@"id"]])
             _saved[t[@"id"]] = [t copy];
 }
+#if defined(IP_IOS6)
+- (NSMutableDictionary *)materializedTrackForID:(NSString *)tid {return _models[tid];}
+- (void)mergeMaterializedMetadata:(NSArray *)updates acknowledged:(BOOL)acknowledged {
+    for(NSDictionary *update in updates){
+        NSString *tid=update[@"id"];NSDictionary *tags=update[@"tags"];
+        if(!_models[tid])continue;
+        if(!acknowledged)[_models[tid] addEntriesFromDictionary:tags];
+        else if(_saved[tid]){
+            // A favorite/download changed during the write must remain dirty.
+            NSMutableDictionary *saved=[_saved[tid] mutableCopy];
+            [saved addEntriesFromDictionary:tags];_saved[tid]=saved;
+        }
+    }
+}
+#endif
 - (NSMutableDictionary *)trackForID:(NSString *)tid {
     if (!_members || ![_members containsObject:tid])
         return nil;

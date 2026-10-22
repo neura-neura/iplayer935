@@ -69,7 +69,12 @@ static NSArray *IPMetadataItems(AVAsset *asset) {
 
 static NSData *IPSmallArtwork(NSData *data) {
     if(!data.length || data.length>16*1024*1024)return nil;
+#if defined(IP_IOS6)
+    // Keep only the 320px thumbnail, not ImageIO's decoded full-size source cover.
+    CGImageSourceRef source=CGImageSourceCreateWithData((__bridge CFDataRef)data,(__bridge CFDictionaryRef)@{(__bridge id)kCGImageSourceShouldCache:@NO});
+#else
     CGImageSourceRef source=CGImageSourceCreateWithData((__bridge CFDataRef)data,NULL);
+#endif
     if(!source)return nil;
     CGImageRef image=CGImageSourceCreateThumbnailAtIndex(source,0,(__bridge CFDictionaryRef)@{(__bridge id)kCGImageSourceCreateThumbnailFromImageAlways:@YES,(__bridge id)kCGImageSourceThumbnailMaxPixelSize:@320,(__bridge id)kCGImageSourceCreateThumbnailWithTransform:@YES});
     CFRelease(source);if(!image)return nil;
@@ -522,6 +527,28 @@ static NSData *IPSmallArtwork(NSData *data) {
     if([NSThread isMainThread])[self persistMetadataNow];else dispatch_sync(dispatch_get_main_queue(),^{[self persistMetadataNow];});
     dispatch_sync(self.persistenceQueue,^{});
 }
+#if defined(IP_IOS6)
+- (void)flushPersistenceWithCompletion:(dispatch_block_t)completion {
+    NSAssert([NSThread isMainThread],@"Capture pending metadata on the main thread");
+    [self persistMetadataNow];
+    // Artwork first posts its model merge to main, which enqueues the DB write.
+    // Cross both queues twice so completion also covers that second write phase.
+    dispatch_async(self.persistenceQueue,^{dispatch_async(dispatch_get_main_queue(),^{
+        dispatch_async(self.persistenceQueue,^{dispatch_async(dispatch_get_main_queue(),^{if(completion)completion();});});
+    });});
+}
+- (BOOL)applyAutomaticMetadataBatch:(NSArray *)batch {
+    // Backpressure: at most one small batch of images/writes can await persistence.
+    dispatch_semaphore_t finished=dispatch_semaphore_create(0);
+    __block BOOL ok=YES;
+    [self applyMetadataBatch:batch completion:^(NSError *error){
+        ok=error==nil;if(error)self.automaticError=error.localizedDescription;
+        dispatch_semaphore_signal(finished);
+    }];
+    dispatch_semaphore_wait(finished,DISPATCH_TIME_FOREVER);
+    return ok;
+}
+#endif
 - (void)applyDecodedMetadata:(NSDictionary *)metadata toTrack:(NSDictionary *)track completion:(IPStoreCompletion)completion {
     if(![track[@"id"] length]){if(completion)completion(nil);return;}
     [self applyMetadataBatch:@[@{@"id":track[@"id"],@"tags":[metadata copy]}] completion:completion];
@@ -530,6 +557,9 @@ static NSData *IPSmallArtwork(NSData *data) {
     dispatch_async(self.persistenceQueue,^{@autoreleasepool{
         NSMutableArray *updates=[NSMutableArray new];
         for(NSDictionary *item in batch){
+#if defined(IP_IOS6)
+            @autoreleasepool{
+#endif
             NSString *trackID=item[@"id"];NSDictionary *source=item[@"tags"];NSMutableDictionary *tags=[NSMutableDictionary new];
             for(NSString *key in @[@"title",@"artist",@"album",@"genre"]){id value=source[key];if([value isKindOfClass:[NSString class]]&&[value length])tags[key]=value;}
             for(NSString *key in @[@"duration",@"trackNumber",@"metadataAutoVersion",@"artworkAutoVersion",@"metadataRetryAfter"]){id value=source[key];if([value isKindOfClass:[NSNumber class]]&&[value doubleValue]>=0)tags[key]=value;}
@@ -539,7 +569,40 @@ static NSData *IPSmallArtwork(NSData *data) {
             if(art.length){NSString *name=[NSString stringWithFormat:@"%@.artwork",IPStoreHash(trackID)];if([art writeToURL:[self.artworkURL URLByAppendingPathComponent:name] atomically:YES])tags[@"artwork"]=name;}
             tags[@"metadataLoaded"]=@(![source[@"metadataCacheState"]isEqual:@"error"]);tags[@"metadataPending"]=@([source[@"metadataCacheState"]isEqual:@"error"]);
             [updates addObject:@{@"id":trackID,@"tags":[tags copy]}];
+#if defined(IP_IOS6)
+            }
+#endif
         }
+#if defined(IP_IOS6)
+        if(self.database&&[self.tracks isKindOfClass:[IPTrackCollection class]]){
+            dispatch_async(dispatch_get_main_queue(),^{
+                IPTrackCollection *collection=(IPTrackCollection *)self.tracks;
+                [collection mergeMaterializedMetadata:updates acknowledged:NO];
+                // Enqueue after merging visible objects: subsequent saves capture fresh tags.
+                dispatch_async(self.persistenceQueue,^{@autoreleasepool{
+                    NSMutableDictionary *byID=[NSMutableDictionary new];
+                    for(NSDictionary *item in updates)byID[item[@"id"]]=item[@"tags"];
+                    NSMutableArray *records=[NSMutableArray new];
+                    for(NSDictionary *old in [self.database recordsForIDs:[updates valueForKey:@"id"]]){
+                        NSMutableDictionary *record=[old mutableCopy];
+                        [record addEntriesFromDictionary:byID[old[@"id"]]];[records addObject:record];
+                    }
+                    BOOL ok=[self.database updateTracks:records];
+                    NSError *error=ok?nil:self.database.error?:IPStoreError(18,IPL(@"Could not save library."));
+                    dispatch_async(dispatch_get_main_queue(),^{
+                        if(ok){
+                            [collection mergeMaterializedMetadata:updates acknowledged:YES];
+                            NSMutableArray *changed=[NSMutableArray new];
+                            for(NSDictionary *record in records)[changed addObject:[collection materializedTrackForID:record[@"id"]]?:record];
+                            if(changed.count)[[NSNotificationCenter defaultCenter]postNotificationName:@"IPTrackMetadataChanged" object:self userInfo:@{@"tracks":changed}];
+                        }
+                        if(completion)completion(error);
+                    });
+                }});
+            });
+            return;
+        }
+#endif
         dispatch_async(dispatch_get_main_queue(),^{
             NSMutableArray *changed=[NSMutableArray new];
             for(NSDictionary *item in updates){NSMutableDictionary *stored=[self trackWithID:item[@"id"]];if(!stored)continue;[stored addEntriesFromDictionary:item[@"tags"]];NSMutableDictionary *merged=[self.decodedMetadata[item[@"id"]] mutableCopy]?:[NSMutableDictionary new];[merged addEntriesFromDictionary:item[@"tags"]];self.decodedMetadata[item[@"id"]]=[merged copy];[changed addObject:stored];}
@@ -1069,12 +1132,24 @@ static NSData *IPSmallArtwork(NSData *data) {
                 }
                 if(tags){if([ext isEqual:@"mp3"])tags[@"artworkAutoVersion"]=@15;batchArtBytes+=[tags[@"artworkData"]length];BOOL found=[tags[@"title"]length]||[tags[@"artist"]length]||[tags[@"album"]length];tags[@"metadataAutoVersion"]=@14;tags[@"metadataCacheState"]=found?@"tagged":@"empty";tags[@"metadataRetryAfter"]=@0;[batch addObject:@{@"id":tid,@"tags":tags}];failures=0;}
                 else{failures++;self.automaticError=error.localizedDescription?:IPL(@"No se pudo leer la etiqueta. Se reintentará más tarde.");[batch addObject:@{@"id":tid,@"tags":@{@"metadataCacheState":@"error",@"metadataRetryAfter":@([NSDate date].timeIntervalSince1970+600)}}];if(connected){[client disconnect];connected=NO;}}
+#if defined(IP_IOS6)
+                if(batch.count>=8 || batchArtBytes>=1024*1024 || [NSDate date].timeIntervalSince1970-batchStarted>=3 || !pending.count){
+                    BOOL saved=[self applyAutomaticMetadataBatch:[batch copy]];[batch removeAllObjects];batchArtBytes=0;batchStarted=[NSDate date].timeIntervalSince1970;
+                    if(!saved){failures=3;break;}
+                }
+#else
                 if(batch.count>=25 || batchArtBytes>=4*1024*1024 || [NSDate date].timeIntervalSince1970-batchStarted>=5 || !pending.count){[self applyMetadataBatch:[batch copy] completion:nil];[batch removeAllObjects];batchArtBytes=0;batchStarted=[NSDate date].timeIntervalSince1970;}
+#endif
                 if(failures>=3)break;
                 [NSThread sleepForTimeInterval:self.playbackActive?.4:.08];
             }
         }
-        if(batch.count)[self applyMetadataBatch:[batch copy] completion:nil];[client disconnect];
+#if defined(IP_IOS6)
+        if(batch.count&&![self applyAutomaticMetadataBatch:[batch copy]])failures=3;
+#else
+        if(batch.count)[self applyMetadataBatch:[batch copy] completion:nil];
+#endif
+        [client disconnect];
         @synchronized(self){if(generation==self.automaticGeneration){self.automaticRunning=NO;self.automaticCurrent=nil;self.automaticRetryAfter=[NSDate date].timeIntervalSince1970+(failures?60:0);}}
         if(self.database&&!failures&&snapshots.count==256)dispatch_after(dispatch_time(DISPATCH_TIME_NOW,2*NSEC_PER_SEC),dispatch_get_main_queue(),^{if(generation==self.automaticGeneration)[self ensureMetadataForProfile:profile priorityTracks:@[]];});
     }});

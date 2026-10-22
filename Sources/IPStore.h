@@ -49,6 +49,10 @@ typedef void (^IPStoreCompletion)(NSError * _Nullable error);
 - (void)setFavorite:(BOOL)favorite forTracks:(NSArray *)tracks;
 /** Waits for queued atomic library writes to reach disk. Call from app background handling. */
 - (void)flushPersistence;
+#if defined(IP_IOS6)
+/** Background lifecycle must not wait synchronously for artwork processing. */
+- (void)flushPersistenceWithCompletion:(dispatch_block_t)completion;
+#endif
 - (nullable NSMutableDictionary *)profileForTrack:(NSDictionary *)track;
 - (nullable NSURL *)localURLForTrack:(NSDictionary *)track;
 - (nullable NSURL *)localURL:(NSDictionary *)track;

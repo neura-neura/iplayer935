@@ -10,6 +10,10 @@
 @interface IPStore (HostTestStorage)
 - (instancetype)initWithSupportURL:(NSURL *)supportURL;
 - (instancetype)initWithSupportURL:(NSURL *)supportURL deferred:(BOOL)deferred;
+#if defined(IP_IOS6)
+- (dispatch_queue_t)persistenceQueue;
+- (void)applyMetadataBatch:(NSArray *)batch completion:(IPStoreCompletion)completion;
+#endif
 @end
 
 @interface LocalTestStore : IPStore
@@ -308,6 +312,43 @@ int main(void) {
         IPStore *fallback=[[IPStore alloc]initWithSupportURL:brokenRoot];NSCAssert(!fallback.database&&fallback.tracks.count==1,@"SQLite failure discarded the legacy library");
         done=NO;[fallback queryProfile:nil mode:@"library" playlistIDs:nil sort:@"title" query:nil offset:0 limit:200 completion:^(NSArray *ids,NSUInteger total,NSUInteger pending,NSArray *records){NSCAssert(total==1&&records.count==1,@"legacy fallback cannot query songs");done=YES;}];IPWaitForFlag(&done);
         puts("SQLite backup preservation and usable JSON fallback passed");
+#if defined(IP_IOS6)
+        // Reproduce sustained indexing against a large library without materializing
+        // every song, and verify the acknowledged batches survive a fresh launch.
+        IPTrackCollection *lazyTracks=(IPTrackCollection *)startup.tracks;
+        NSUInteger modelsBefore=lazyTracks.materializedTracks.count;
+        NSArray *allIDs=lazyTracks.trackIDs;
+        for(NSUInteger base=0;base<512;base+=8){@autoreleasepool{
+            NSMutableArray *updates=[NSMutableArray new];
+            for(NSUInteger n=base;n<base+8;n++)[updates addObject:@{@"id":allIDs[n],@"tags":@{@"title":@"Persistent cached title",@"artist":@"Cached artist",@"metadataAutoVersion":@14,@"artworkAutoVersion":@15,@"metadataCacheState":@"tagged"}}];
+            done=NO;[startup applyMetadataBatch:updates completion:^(NSError *error){NSCAssert(!error,@"legacy batch persistence failed: %@",error);done=YES;}];IPWaitForFlag(&done);
+        }}
+        NSCAssert(lazyTracks.materializedTracks.count==modelsBefore,@"tag caching hydrated unseen tracks");
+        NSCAssert(lazyTracks.changedTracks.count==0,@"committed tags accumulated duplicate dirty saves");
+        IPStore *cachedRestart=[[IPStore alloc]initWithSupportURL:startupRoot];
+        for(NSUInteger n=0;n<512;n++){
+            NSDictionary *cached=[cachedRestart.database track:allIDs[n]];
+            NSCAssert([cached[@"title"]isEqual:@"Persistent cached title"]&&[cached[@"metadataAutoVersion"]intValue]==14,@"acknowledged tags lost on restart");
+        }
+        // A slow artwork/write queue must never hold the main/background callback.
+        dispatch_semaphore_t releaseWriter=dispatch_semaphore_create(0);
+        dispatch_async(startup.persistenceQueue,^{dispatch_semaphore_wait(releaseWriter,DISPATCH_TIME_FOREVER);});
+        __block BOOL metadataCommitted=NO;
+        [startup applyMetadataBatch:@[@{@"id":allIDs[513],@"tags":@{@"title":@"Flushed metadata"}}] completion:^(NSError *error){NSCAssert(!error,@"queued metadata failed");metadataCommitted=YES;}];
+        done=NO;NSTimeInterval flushStarted=[NSDate date].timeIntervalSince1970;
+        [startup flushPersistenceWithCompletion:^{NSCAssert(metadataCommitted,@"flush completed before the two-phase metadata commit");done=YES;}];
+        NSCAssert([NSDate date].timeIntervalSince1970-flushStarted<.1&&!done,@"background flush blocked the main thread");
+        [[NSRunLoop mainRunLoop]runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:.02]];
+        NSCAssert(!done,@"background completion preceded persistence");
+        dispatch_semaphore_signal(releaseWriter);IPWaitForFlag(&done);
+        // Tag acknowledgements must preserve an unsaved favorite on an existing object.
+        NSMutableDictionary *visible=[lazyTracks trackForID:allIDs[0]];visible[@"favorite"]=@YES;
+        NSArray *tagPatch=@[@{@"id":allIDs[0],@"tags":@{@"title":@"New title"}}];
+        [lazyTracks mergeMaterializedMetadata:tagPatch acknowledged:NO];
+        [lazyTracks mergeMaterializedMetadata:tagPatch acknowledged:YES];
+        NSCAssert([visible[@"favorite"]boolValue]&&[lazyTracks.changedTracks containsObject:visible],@"tag acknowledgement cleared an unsaved favorite");
+        puts("iOS 6: bounded 512-track metadata indexing, restart persistence, favorite isolation and nonblocking background flush passed");
+#endif
         NSArray *bulk=@[startup.tracks[0],startup.tracks[1],startup.tracks[0]];
         __block NSUInteger favoriteNotifications=0;
         id favoriteObserver=[[NSNotificationCenter defaultCenter]addObserverForName:@"IPFavoriteChanged" object:startup queue:nil usingBlock:^(NSNotification *n){favoriteNotifications++;}];

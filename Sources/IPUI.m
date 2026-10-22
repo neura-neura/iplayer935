@@ -892,8 +892,17 @@ static void Message(UIViewController *v, NSString *s) {
     [S() stopAutomaticMetadata];
     [S() cancelMetadata];
     [S() save];
+#if defined(IP_IOS6)
+    // iOS 6 grants only ten seconds to return from this callback. Artwork can take
+    // longer; finish it under a background assertion without blocking the run loop.
+    __block UIBackgroundTaskIdentifier task=UIBackgroundTaskInvalid;
+    void (^finish)(void)=^{if(task!=UIBackgroundTaskInvalid){[a endBackgroundTask:task];task=UIBackgroundTaskInvalid;}};
+    task=[a beginBackgroundTaskWithExpirationHandler:finish];
+    [S() flushPersistenceWithCompletion:finish];
+#else
     [S() flushPersistence];
     [IPDiagnostics write];
+#endif
 }
 - (void)applicationWillTerminate:(UIApplication *)app {[[IPPlayer shared]flushSession];}
 - (void)applicationDidBecomeActive:(UIApplication *)app {
