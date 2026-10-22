@@ -123,6 +123,10 @@ static BOOL NeedsTags(NSDictionary *t) {
 - (BOOL)buildImportIndexes {
     [_lock lock];
         for (NSString *key in @[ @"title", @"artist", @"album", @"genre", @"recent", @"number" ]) {
+#if defined(IP_IOS6)
+            // Other sort indexes are prepared only when requested, then retained on disk.
+            if(![key isEqual:@"title"])continue;
+#endif
             if(self.importProgress&&!self.importProgress(NSUIntegerMax,[NSString stringWithFormat:IPL(@"Preparando orden: %@"),IPL((@{@"title":@"Título (A–Z)",@"artist":@"Artista",@"album":@"Álbum",@"genre":@"Género",@"recent":@"Más recientes",@"number":@"Número de pista"})[key])])){[_lock unlock];return NO;}
             NSString *direction = [key isEqual:@"recent"] ? @" DESC" : @"",
                      *tail = [key isEqual:@"title"] ? @",id" : @",title,id";
@@ -232,7 +236,11 @@ static BOOL NeedsTags(NSDictionary *t) {
 }
 - (NSArray *)recordsForProfileID:(NSString *)pid {
     [_lock lock];
-    sqlite3_stmt *s = [self prepare:@"SELECT json FROM tracks WHERE profile=?" values:@[ pid ]];
+    sqlite3_stmt *s = [self prepare:@"SELECT json FROM tracks WHERE profile=?"
+#if defined(IP_IOS6)
+                                 @" ORDER BY ordinal,id"
+#endif
+                           values:@[ pid ]];
     NSMutableArray *records = [NSMutableArray new];
     while (sqlite3_step(s) == SQLITE_ROW) {
         NSDictionary *t = [self json:s column:0];
@@ -515,6 +523,12 @@ static BOOL NeedsTags(NSDictionary *t) {
                                : [key isEqual:@"recent"]      ? @"recent"
                                : [key isEqual:@"trackNumber"] ? @"number"
                                                               : @"title";
+#if defined(IP_IOS6)
+            if(!playlist&&![column isEqual:@"title"]){
+                NSString *direction=[column isEqual:@"recent"]?@" DESC":@"";
+                [self exec:[NSString stringWithFormat:@"CREATE INDEX IF NOT EXISTS sort_%@ ON tracks(profile,endpoint,%@%@,title,id); CREATE INDEX IF NOT EXISTS global_%@ ON tracks(%@%@,title,id);",column,column,direction,column,column,direction]];
+            }
+#endif
             NSString *order =
                 playlist ? @"m.position"
                          : [NSString stringWithFormat:@"t.%@%@,t.title,t.id", column,

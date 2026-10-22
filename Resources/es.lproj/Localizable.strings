@@ -340,3 +340,9 @@
 "This iTunes item is protected or has no playable local file." = "Este elemento de iTunes está protegido o no tiene un archivo local reproducible.";
 "Some folders could not be read. Existing entries were kept." = "No se pudieron leer algunas carpetas. Se conservaron las entradas existentes.";
 "Local includes iTunes music and readable audio files in this app's Documents folder or /var/mobile/Media. Copy files into Documents using file sharing, or into a music folder under /var/mobile/Media using a file manager. Photos and system folders are skipped. Protected or cloud-only iTunes items cannot be played. This built-in source cannot be edited or deleted." = "Local incluye música de iTunes y archivos de audio accesibles en Documentos de esta app o en /var/mobile/Media. Copia archivos a Documentos mediante el intercambio de archivos, o a una carpeta de música dentro de /var/mobile/Media con un gestor de archivos. Se omiten fotos y carpetas del sistema. No se pueden reproducir elementos de iTunes protegidos o disponibles solo en la nube. Este origen integrado no se puede editar ni eliminar.";
+
+"Saving library…" = "Guardando biblioteca…";
+
+"Saving library: %lu of %lu" = "Guardando biblioteca: %lu de %lu";
+
+"Could not save library." = "No se pudo guardar la biblioteca.";

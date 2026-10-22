@@ -78,6 +78,13 @@ int main() {
                   @"migration transaction failed: %@", db.error);
         printf("SQLite migration of 25154 records: %.3fs (Mac host)\n",
                -[start timeIntervalSinceNow]);
+#if defined(IP_IOS6)
+        sqlite3 *initial=NULL;sqlite3_stmt *initialStatement=NULL;
+        sqlite3_open(url.path.UTF8String,&initial);
+        sqlite3_prepare_v2(initial,"SELECT count(*) FROM sqlite_master WHERE type='index' AND (name LIKE 'sort_%' OR name LIKE 'global_%')",-1,&initialStatement,NULL);
+        NSCAssert(sqlite3_step(initialStatement)==SQLITE_ROW&&sqlite3_column_int(initialStatement,0)==2,@"legacy initial scan eagerly prepared unused sort indexes");
+        sqlite3_finalize(initialStatement);sqlite3_close(initial);
+#endif
         IPLibraryDB *reopen = [[IPLibraryDB alloc] initWithURL:url];
         NSCAssert(reopen.ready && [[reopen state] isEqual:state] && [[reopen trackIDs] isEqual:ids],
                   @"state, order or playlist duplicates lost on reopening");
@@ -208,6 +215,7 @@ int main() {
         NSCAssert(sqlite3_step(s)==SQLITE_ROW&&strcmp((const char *)sqlite3_column_text(s,0),"delete")==0,@"legacy bulk writes must not use amplifying WAL mode");
         sqlite3_finalize(s);sqlite3_close(raw);
         NSCAssert(![[NSFileManager defaultManager]fileExistsAtPath:[url.path stringByAppendingString:@"-wal"]],@"legacy import left a large WAL");
+        NSCAssert([reopen recordsForProfileID:@"p"].count==25153&&[[reopen recordsForProfileID:@"p"].firstObject[@"id"]isEqual:@"00001"],@"legacy refresh changed persistent library order after lazy indexing");
         NSCAssert(Query(reopen,profile,@"library",nil,@"title",@"%",0,200,0).count==0,@"legacy substring search treated percent as wildcard");
         puts("Legacy rollback journal, bounded WAL storage and literal substring search passed");
 #endif

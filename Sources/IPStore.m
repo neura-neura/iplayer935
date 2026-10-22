@@ -389,8 +389,18 @@ static NSData *IPSmallArtwork(NSData *data) {
 }
 
 - (NSURL *)dataURL { return [self.supportURL URLByAppendingPathComponent:@"library.json"]; }
+#if defined(IP_IOS6)
+- (void)save {[self saveWithProgress:nil completion:nil];}
+- (void)saveWithProgress:(IPStoreProgress)progress completion:(IPStoreCompletion)completion {
+#else
 - (void)save {
-    if(!self.libraryLoaded)return; // Never overwrite disk with the bootstrap model.
+#endif
+    if(!self.libraryLoaded){
+#if defined(IP_IOS6)
+        if(completion)completion(IPStoreError(17,IPL(@"Cargando biblioteca guardada…")));
+#endif
+        return; // Never overwrite disk with the bootstrap model.
+    }
     self.trackLookup=nil;
     __block NSDictionary *snapshot = nil;
     __block unsigned long long limitSnapshot = 0;
@@ -413,18 +423,41 @@ static NSData *IPSmallArtwork(NSData *data) {
     if ([NSThread isMainThread]) capture(); else dispatch_sync(dispatch_get_main_queue(), capture);
     NSURL *url = [self dataURL];
     dispatch_async(self.persistenceQueue, ^{
-        if(self.database.ready){BOOL ok=[self.database commitState:@{@"profiles":snapshot[@"profiles"],@"playlists":snapshot[@"playlists"],@"cacheLimitBytes":snapshot[@"cacheLimitBytes"],@"exampleProfileSeeded":snapshot[@"exampleProfileSeeded"]?:@NO} tracks:snapshot[@"tracks"] IDs:ids];
+        if(self.database.ready){
 #if defined(IP_IOS6)
+            __block NSTimeInterval lastProgress=0;
+            if(progress)self.database.importProgress=^BOOL(NSUInteger n,NSString *phase){
+                NSTimeInterval now=[NSDate date].timeIntervalSince1970;
+                if(n==NSUIntegerMax||now-lastProgress>=.5){
+                    lastProgress=now;
+                    NSString *message=n==NSUIntegerMax?phase:[NSString stringWithFormat:IPL(@"Saving library: %lu of %lu"),(unsigned long)n,(unsigned long)[snapshot[@"tracks"]count]];
+                    [self sendProgress:progress message:message];
+                }
+                return YES;
+            };
+#endif
+            BOOL ok=[self.database commitState:@{@"profiles":snapshot[@"profiles"],@"playlists":snapshot[@"playlists"],@"cacheLimitBytes":snapshot[@"cacheLimitBytes"],@"exampleProfileSeeded":snapshot[@"exampleProfileSeeded"]?:@NO} tracks:snapshot[@"tracks"] IDs:ids];
+#if defined(IP_IOS6)
+            self.database.importProgress=nil;
+            NSError *writeError=ok?nil:self.database.error?:IPStoreError(18,IPL(@"Could not save library."));
             dispatch_async(dispatch_get_main_queue(),^{
                 if([snapshot[@"tracks"]count]>=256&&legacyPendingWrites)legacyPendingWrites--;
                 if(ok&&[self.tracks isKindOfClass:[IPTrackCollection class]])[(IPTrackCollection *)self.tracks acknowledgeTracks:snapshot[@"tracks"]];
+                if(completion)completion(writeError);
             });
 #else
             if(ok)dispatch_async(dispatch_get_main_queue(),^{if([self.tracks isKindOfClass:[IPTrackCollection class]])[(IPTrackCollection *)self.tracks acknowledgeTracks:snapshot[@"tracks"]];});
 #endif
             return;}
         NSData *json = [NSJSONSerialization dataWithJSONObject:snapshot options:0 error:NULL];
+#if defined(IP_IOS6)
+        NSError *writeError=nil;
+        BOOL ok=json&&[json writeToURL:url options:NSDataWritingAtomic error:&writeError];
+        if(!ok&&!writeError)writeError=IPStoreError(18,IPL(@"Could not save library."));
+        if(completion)dispatch_async(dispatch_get_main_queue(),^{completion(writeError);});
+#else
         if (json) [json writeToURL:url options:NSDataWritingAtomic error:NULL];
+#endif
     });
 }
 - (BOOL)setFavorite:(BOOL)favorite forTrack:(NSDictionary *)track {
@@ -849,7 +882,12 @@ static NSData *IPSmallArtwork(NSData *data) {
             }
             self.automaticRetryAfter=0;
             self.metadataWritePending=YES;[self persistMetadataNow];
+#if defined(IP_IOS6)
+            [self sendProgress:progress message:IPL(@"Saving library…")];
+            [self saveWithProgress:progress completion:^(NSError *writeError){[self finish:completion error:writeError];}];
+#else
             [self save]; [self finish:completion error:nil];
+#endif
             dispatch_semaphore_signal(scanCommitDone);
         });
         dispatch_semaphore_wait(scanCommitDone, DISPATCH_TIME_FOREVER);

@@ -67,3 +67,5 @@ Legacy output, objects and license/source staging are under `build/ios6`; the st
 
 
 Legacy database regression: run `./Tests/run-ios6-database-tests.sh` to test against the actual SQLite 3.7.13 engine on the Mac. It caches a checksum-verified public-domain amalgamation from sqlite.org under ignored build/cache. This is a host database/Store test, not an iOS UIKit emulator. The legacy app uses iOS's SQLite, with rollback journaling and deferred UI reads during bulk commits; see https://www.sqlite.org/wal.html for the pre-3.11 WAL limitation.
+
+Legacy bulk scans prepare title sorting first. Other metadata sort indexes are created by the background query worker when first requested and retained on disk. The scan completion callback waits for its asynchronous save and propagates persistence errors; the UI reports saving progress during that phase.

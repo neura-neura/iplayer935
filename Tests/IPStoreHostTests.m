@@ -138,7 +138,14 @@ int main(void) {
         [store.profiles addObject:profile]; [store save];
         [store flushPersistence];
         __block volatile BOOL done = NO;
-        [store scanProfile:profile progress:nil completion:^(NSError *error) { NSCAssert(error == nil, @"scan failed: %@", error); done = YES; }];
+        [store scanProfile:profile progress:nil completion:^(NSError *error) {
+            NSCAssert(error == nil, @"scan failed: %@", error);
+#if defined(IP_IOS6)
+            IPStore *committed=[[IPStore alloc]initWithSupportURL:storeRoot];
+            NSCAssert(committed.tracks.count==6,@"legacy scan announced completion before persistence finished");
+#endif
+            done = YES;
+        }];
         IPWaitForFlag(&done);
         [store flushPersistence];
         NSCAssert(store.tracks.count == 6, @"scan should keep supported and unsupported audio, but skip cover image");

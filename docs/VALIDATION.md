@@ -342,3 +342,12 @@ Legacy-only changes: rollback journal instead of old SQLite WAL amplification; 2
 `Tests/run-ios6-database-tests.sh` downloads a checksum-pinned public-domain SQLite 3.7.13 amalgamation from sqlite.org, then runs the full database and Store suites linked against that engine with IP_IOS6. Large import, ordering/search/paging, literal percent search, rollback atomicity, journal mode, lazy queues, favorites, local-source isolation and persistence tests passed. Default host database and Store suites also passed. Default iOS 9 rebuilt; disassembly differs from build 32 only in four assertion source-line constants moved by the conditional legacy code. Playback/library logic instructions otherwise remain unchanged.
 
 USB install of build 36 succeeded. On-device container inspection after launch showed no WAL, with the original server profiles preserved. Physical completion of the new scan and audible playback remain pending. No remote music files were modified and no GitHub push was made.
+
+
+### Legacy build 37 — truthful scan completion and less initial indexing
+
+The user confirmed build 36 eventually populated the list. Its on-device diagnostics report 25,156 total records. The former “indexed” completion was posted before the asynchronous database save; a database copy taken during that live transaction was inconsistent and was not used as evidence of corruption or written back.
+
+The iOS 6 scan now completes only after persistence succeeds, propagates save failures, and displays throttled saving counts and index phases. Initial bulk preparation creates the two title sort indexes rather than all twelve sort indexes. Other sort indexes are created on their first query on the background reader and persist for reuse. Legacy profile record reads explicitly preserve ordinal order, avoiding dependence on SQLite's choice of index. These changes compile out of iOS 9.
+
+SQLite 3.7.13 database/Store suites cover lazy initial indexes, all metadata sort queries, persistent refresh order, atomic rollback and scan completion after disk persistence. Default database/Store and three-language localization tests also pass. Host timing is not a device speed measurement; physical scan timing and playback remain to be confirmed. No GitHub push or release.

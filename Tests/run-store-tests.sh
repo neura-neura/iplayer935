@@ -10,7 +10,7 @@ EXTRA_FLAGS=()
 SQLITE=(-lsqlite3)
 if [[ "${IP_TEST_IOS6:-0}" == 1 ]]; then EXTRA_FLAGS+=(-DIP_IOS6=1); fi
 if [[ -n "${IP_TEST_SQLITE_OBJECT:-}" ]]; then SQLITE=("$IP_TEST_SQLITE_OBJECT"); fi
-clang "${EXTRA_FLAGS[@]}" -fobjc-arc -fblocks -framework Foundation -framework Security \
+clang ${EXTRA_FLAGS[@]+"${EXTRA_FLAGS[@]}"} -fobjc-arc -fblocks -framework Foundation -framework Security \
   -framework AVFoundation -framework CoreMedia -framework ImageIO -framework CoreGraphics -I"$ROOT/Sources" \
   -I"$CODEC/include" "$ROOT/Sources/IPStrings.m" "$ROOT/Sources/IPLibraryIndex.m" "$ROOT/Sources/IPLibraryDB.m" "$ROOT/Sources/IPSmartCache.m" "$ROOT/Sources/IPStore.m" "$ROOT/Sources/IPLocalLibrary.m" "$ROOT/Sources/IPID3.m" "$ROOT/Sources/IPPCMServer.m" "$ROOT/Tests/IPStoreHostTests.m" \
   "$CODEC/lib/libavformat.a" "$CODEC/lib/libavcodec.a" "$CODEC/lib/libswresample.a" "$CODEC/lib/libavutil.a" \
