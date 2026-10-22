@@ -340,7 +340,9 @@
     if (old)
         [old removeObserver:self forKeyPath:@"status"];
     [self.player replaceCurrentItemWithPlayerItem:item];
+#if !defined(IP_IOS6)
     if(self.wantsPlayback&&self.resumeSeconds<=0)[self.player play];
+#endif
     [self publish];
     if (!self.pcmPlayer && [self.track[@"metadataPending"] boolValue])
         [[IPStore shared] refreshMetadataForTrack:self.track completion:^(NSError *error){[self publish];}];
@@ -353,6 +355,10 @@
         NSUInteger token=self.generation;AVPlayerItem *item=self.player.currentItem;
         dispatch_async(dispatch_get_main_queue(),^{
             if(token!=self.generation||item!=self.player.currentItem)return;
+#if defined(IP_IOS6)
+            // The iOS 6 audio-mix gain must be installed after tracks load, before play.
+            self.player.volume=self.tail?0:1;
+#endif
             double seconds=self.resumeSeconds;
             void (^ready)(BOOL)=^(BOOL finished){dispatch_async(dispatch_get_main_queue(),^{if(token!=self.generation)return;self.opening=NO;self.resumeSeconds=0;if(self.wantsPlayback)[self.player play];else[self.player pause];[self startTransitionIfReady];[self saveSession];[self publish];});};
             if(seconds>0){double duration=CMTimeGetSeconds(item.duration);if(isfinite(duration)&&duration>0)seconds=MIN(seconds,MAX(0,duration-.1));[self.player seekToTime:CMTimeMakeWithSeconds(seconds,600) completionHandler:ready];}else ready(YES);
