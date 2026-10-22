@@ -48,7 +48,7 @@ Installing an update with the same app identifier preserves the app's data. Do n
 4. Use **⋯ → Refresh library and M3U** to force a scan. Automatic checks run when entering a server and while its library is visible, with a 15-minute interval between checks. They are background scans, not instant server notifications.
 5. Metadata and artwork are cached locally. Check or pause progress in **⋯ → Tag cache status**. Already checked, unchanged files are not reprocessed every time the app opens.
 
-**Local** is a fixed, read-only source for iTunes music, completed downloads/cache and readable audio files in the app’s Documents folder or `/var/mobile/Media`. Use file sharing or a file manager to copy music there. It refreshes in the background on entry and while visible (at most once per minute); **⋯ → Refresh local library** forces a scan. Unchanged tags and artwork remain cached. Protected or cloud-only iTunes items cannot be played.
+**Local** is a fixed, read-only source for iTunes music and readable audio files in the app’s Documents folder or `/var/mobile/Media`. Use file sharing or a file manager to copy music there. It refreshes in the background on entry and while visible (at most once per minute); **⋯ → Refresh local library** forces a scan. Unchanged tags and artwork remain cached. Protected or cloud-only iTunes items cannot be played.
 
 ## Playback and offline listening
 

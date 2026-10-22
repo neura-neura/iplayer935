@@ -56,7 +56,7 @@ static BOOL NeedsTags(NSDictionary *t) {
     sqlite3 *_db;
     NSRecursiveLock *_lock;
     dispatch_queue_t _reader;
-    NSArray *_ids, *_members, *_localMembers;
+    NSArray *_ids, *_members;
     NSMutableDictionary *_counts;
 }
 - (instancetype)initWithURL:(NSURL *)url {
@@ -85,7 +85,7 @@ static BOOL NeedsTags(NSDictionary *t) {
                    @"downloaded INTEGER, pending INTEGER, needed INTEGER, emptyTag INTEGER, "
                    @"failedTag INTEGER, unsupported INTEGER, unavailable INTEGER, extension "
                    @"TEXT,json BLOB NOT NULL); CREATE TEMP TABLE query_members(position INTEGER "
-                   @"PRIMARY KEY,id TEXT); CREATE INDEX query_member_id ON query_members(id); CREATE TEMP TABLE local_cache_members(id TEXT PRIMARY KEY);"];
+                   @"PRIMARY KEY,id TEXT); CREATE INDEX query_member_id ON query_members(id);"];
         if([self ready])[self buildImportIndexes];
     }
     return self;
@@ -451,17 +451,11 @@ static BOOL NeedsTags(NSDictionary *t) {
                 sqlite3_finalize(s);
                 self->_members = members;
             }
-            BOOL local=[p[@"isLocal"]boolValue];NSArray *localIDs=p[@"localCacheIDs"]?:@[];
-            if(local&&![self->_localMembers isEqual:localIDs]){
-                [self exec:@"DELETE FROM local_cache_members"];
-                sqlite3_stmt *insert=[self prepare:@"INSERT OR IGNORE INTO local_cache_members VALUES(?)" values:@[]];
-                for(NSString *tid in localIDs){sqlite3_reset(insert);Bind(insert,1,tid);sqlite3_step(insert);}sqlite3_finalize(insert);
-                self->_localMembers=[localIDs copy];
-            }
+            BOOL local=[p[@"isLocal"]boolValue];
             BOOL playlist = members && [key isEqual:@"playlist"];
             NSMutableArray *where = [NSMutableArray new], *values = [NSMutableArray new];
             if (p) {
-                [where addObject:local?@"((t.profile=? AND t.endpoint=? AND t.unavailable=0) OR t.downloaded=1 OR EXISTS (SELECT 1 FROM local_cache_members c WHERE c.id=t.id))":@"t.profile=? AND t.endpoint=?"];
+                [where addObject:local?@"t.profile=? AND t.endpoint=? AND t.unavailable=0":@"t.profile=? AND t.endpoint=?"];
                 [values addObjectsFromArray:@[ p[@"id"] ?: @"", p[@"endpointIdentity"] ?: @"" ]];
             }
             if (members && !playlist)
@@ -492,7 +486,7 @@ static BOOL NeedsTags(NSDictionary *t) {
                                                       [key isEqual:@"recent"] ? @" DESC" : @""];
             NSArray *countKey = @[
                 p[@"id"] ?: @"", p[@"endpointIdentity"] ?: @"", kind ?: @"", search, members ?: @[],
-                @(playlist), localIDs
+                @(playlist)
             ];
             NSArray *counts = self->_counts[countKey];
             NSUInteger total = 0, pending = 0;

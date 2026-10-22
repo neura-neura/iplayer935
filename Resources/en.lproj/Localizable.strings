@@ -330,7 +330,7 @@
 "Enter your SMB account username. Leave empty only if the share allows guest access." = "Enter your SMB account username. Leave empty only if the share allows guest access.";
 "Enter that SMB account's password. Leave empty to keep the saved password, if any." = "Enter that SMB account's password. Leave empty to keep the saved password, if any.";
 "Local" = "Local";
-"iTunes, downloads and local files" = "iTunes, downloads and local files";
+"iTunes and local files" = "iTunes and local files";
 "Reading local music…" = "Reading local music…";
 "Refresh local library" = "Refresh local library";
 "Local music folders" = "Local music folders";
@@ -339,4 +339,4 @@
 "The local file is no longer available." = "The local file is no longer available.";
 "This iTunes item is protected or has no playable local file." = "This iTunes item is protected or has no playable local file.";
 "Some folders could not be read. Existing entries were kept." = "Some folders could not be read. Existing entries were kept.";
-"Local includes iTunes music, completed app downloads and readable audio files in this app's Documents folder or /var/mobile/Media. Copy files into Documents using file sharing, or into a music folder under /var/mobile/Media using a file manager. Photos and system folders are skipped. Protected or cloud-only iTunes items cannot be played. This built-in source cannot be edited or deleted." = "Local includes iTunes music, completed app downloads and readable audio files in this app's Documents folder or /var/mobile/Media. Copy files into Documents using file sharing, or into a music folder under /var/mobile/Media using a file manager. Photos and system folders are skipped. Protected or cloud-only iTunes items cannot be played. This built-in source cannot be edited or deleted.";
+"Local includes iTunes music and readable audio files in this app's Documents folder or /var/mobile/Media. Copy files into Documents using file sharing, or into a music folder under /var/mobile/Media using a file manager. Photos and system folders are skipped. Protected or cloud-only iTunes items cannot be played. This built-in source cannot be edited or deleted." = "Local includes iTunes music and readable audio files in this app's Documents folder or /var/mobile/Media. Copy files into Documents using file sharing, or into a music folder under /var/mobile/Media using a file manager. Photos and system folders are skipped. Protected or cloud-only iTunes items cannot be played. This built-in source cannot be edited or deleted.";

@@ -306,3 +306,12 @@ El usuario aprobó los cambios de30 y las composiciones promocionales con datos 
 - Session/cache regression suite and localization runtime suite passed. All three catalogs have 341 keys with matching format arguments.
 - Physical validation of native iTunes asset playback, filesystem permissions and local automatic refresh is pending user confirmation. Installation does not establish those outcomes.
 - No GitHub push or release is part of this change.
+
+
+## Local source isolation — internal build 32
+
+- Corrected Local to include only native iTunes/filesystem records. Manual downloads and automatic cache tracks remain outside Local. Existing audio, cached metadata and downloaded files are not deleted.
+- Removed cache membership table, manifest backfill and cache-change UI refreshes that are no longer needed.
+- SQLite and fallback query regression tests explicitly supply remote downloaded/cached tracks and assert that only the native file is returned. Missing local files remain excluded.
+- Database, fallback index, Store and session/cache host suites passed; 341-key English/Spanish/Chinese catalog validation passed. ARMv7 build passed.
+- README and UI help reflect the narrower source. Saved only in local Git; no push or release.

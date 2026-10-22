@@ -429,7 +429,6 @@ static NSData *IPSmallArtwork(NSData *data) {
     if([NSThread isMainThread])update();else dispatch_sync(dispatch_get_main_queue(),update);
 }
 - (void)queryProfile:(NSDictionary *)profile mode:(NSString *)mode playlistIDs:(NSArray *)playlistIDs sort:(NSString *)sort query:(NSString *)query offset:(NSUInteger)offset limit:(NSUInteger)limit completion:(void (^)(NSArray *,NSUInteger,NSUInteger,NSArray *))completion {
-    if(IPIsLocalProfile(profile)){NSMutableDictionary *local=[profile mutableCopy];local[@"localCacheIDs"]=self.smartCache.cachedTrackIDs?:@[];profile=local;}
     if(!self.database){
         // While preparing SQLite (or if unavailable), reuse the usable legacy index.
         if(!self.legacyIndex){self.legacyIndex=[IPLibraryIndex new];[self.legacyIndex replaceTracks:self.tracks];}
@@ -856,15 +855,6 @@ static NSData *IPSmallArtwork(NSData *data) {
         NSDictionary *result=[IPLocalLibrary scanRoots:[self localFileRoots] includeMediaLibrary:YES];
         NSMutableDictionary *previous=[NSMutableDictionary new];
         if(self.database)for(NSDictionary *t in [self.database recordsForProfileID:IPLocalProfileID])previous[t[@"id"]]=t;
-        // Older automatic-cache manifests have only hashes. Resolve them once in bounded pages,
-        // without materializing the main-thread models or re-downloading any file.
-        if(self.smartCache.hasLegacyEntries&&self.database){
-            NSArray *ids=self.database.trackIDs;
-            for(NSUInteger n=0;n<ids.count;n+=256){@autoreleasepool{
-                [self.smartCache rememberTracks:[self.database recordsForIDs:[ids subarrayWithRange:NSMakeRange(n,MIN((NSUInteger)256,ids.count-n))]]];
-            }}
-            [self.smartCache flush];
-        }
         dispatch_async(dispatch_get_main_queue(),^{
             NSArray *models=[self.tracks isKindOfClass:[IPTrackCollection class]]?[(IPTrackCollection *)self.tracks materializedTracks]:self.tracks;
             for(NSDictionary *t in models)if([t[@"profileID"]isEqual:IPLocalProfileID])previous[t[@"id"]]=t;

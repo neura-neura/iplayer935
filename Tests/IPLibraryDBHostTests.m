@@ -238,11 +238,11 @@ int main() {
             @{@"id":@"missing",@"profileID":@"local-library-v1",@"endpointIdentity":@"local-library-v1",@"unavailableRemote":@YES,@"title":@"E missing"}];
         NSCAssert([localDB commitState:@{} tracks:localRecords IDs:[localRecords valueForKey:@"id"]]&&[localDB buildImportIndexes],@"local fixture failed");
         NSMutableDictionary *localProfile=[@{@"id":@"local-library-v1",@"endpointIdentity":@"local-library-v1",@"isLocal":@YES,@"localCacheIDs":@[@"auto",@"manual"]}mutableCopy];
-        NSCAssert(([Query(localDB,localProfile,@"library",nil,@"title",nil,0,20,3)isEqual:@[@"native",@"manual",@"auto"]]),@"local union must deduplicate downloads/cache and hide missing or online tracks");
-        NSCAssert([Query(localDB,localProfile,@"library",nil,@"title",@"cached",0,20,1)isEqual:@[@"auto"]],@"local metadata search failed");
+        NSCAssert(([Query(localDB,localProfile,@"library",nil,@"title",nil,0,20,1)isEqual:@[@"native"]]),@"local must exclude player downloads/cache and missing or remote tracks");
+        NSCAssert([Query(localDB,localProfile,@"library",nil,@"title",@"cached",0,20,0)isEqual:@[]],@"remote cached track leaked into local search");
         localProfile[@"localCacheIDs"]=@[];
-        NSCAssert([Query(localDB,localProfile,@"library",nil,@"title",nil,1,1,2)isEqual:@[@"manual"]],@"cache eviction or local paging failed");
-        puts("Local SQLite union, offline membership, deduplication, metadata search, paging and cache eviction passed");
+        NSCAssert([Query(localDB,localProfile,@"library",nil,@"title",nil,0,1,1)isEqual:@[@"native"]],@"local paging failed");
+        puts("Local SQLite isolation from manual/automatic downloads, missing files, search and paging passed");
         [[NSFileManager defaultManager] removeItemAtURL:root error:NULL];
     }
     return 0;

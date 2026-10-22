@@ -18,5 +18,13 @@ int main(){@autoreleasepool{
     done=NO;[index rowsForProfile:nil mode:@"songs" playlistIDs:@[@"00003",@"00001",@"00003"] sort:@"playlist" query:nil completion:^(NSArray *rows,NSUInteger pending){NSCAssert(rows.count==3&&rows[0]==rows[2],@"playlist duplicates/order lost");done=YES;}];Wait(&done);
     NSMutableDictionary *updated=tracks[3];updated[@"title"]=@"AAAA";[index updateTracks:@[updated]];
     done=NO;[index rowsForProfile:nil mode:@"favorites" playlistIDs:nil sort:@"title" query:nil completion:^(NSArray *rows,NSUInteger pending){NSCAssert(rows.count==1&&[rows[0][@"title"] isEqual:@"AAAA"],@"incremental update/cache invalidation failed");done=YES;}];Wait(&done);
+    IPLibraryIndex *localIndex=[IPLibraryIndex new];
+    [localIndex replaceTracks:@[
+        @{@"id":@"native",@"profileID":@"local-library-v1",@"endpointIdentity":@"local-library-v1",@"title":@"Local file"},
+        @{@"id":@"download",@"profileID":@"remote",@"downloaded":@YES},
+        @{@"id":@"cached",@"profileID":@"remote"},
+        @{@"id":@"missing",@"profileID":@"local-library-v1",@"endpointIdentity":@"local-library-v1",@"unavailableRemote":@YES}]];
+    done=NO;[localIndex rowsForProfile:@{@"id":@"local-library-v1",@"endpointIdentity":@"local-library-v1",@"isLocal":@YES,@"localCacheIDs":@[@"cached",@"download"]} mode:@"library" playlistIDs:nil sort:@"title" query:nil completion:^(NSArray *rows,NSUInteger pending){NSCAssert(rows.count==1&&[rows[0][@"id"]isEqual:@"native"],@"fallback local view leaked player downloads/cache or missing files");done=YES;}];Wait(&done);
+    puts("Fallback Local query excludes player downloads/cache and missing files");
     puts("ID3 bounded parsing and library index checks passed");
 }return 0;}

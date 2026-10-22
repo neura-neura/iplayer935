@@ -26,18 +26,18 @@ static NSString *Fold(NSString *s) {return [[s?:@"" stringByFoldingWithOptions:N
 }
 - (void)rowsForProfile:(NSDictionary *)profile mode:(NSString *)mode playlistIDs:(NSArray *)playlistIDs sort:(NSString *)sort query:(NSString *)query completion:(void (^)(NSArray *,NSUInteger))completion {
     NSString *pid=[profile[@"id"] copy],*endpoint=[profile[@"endpointIdentity"] copy];
-    BOOL local=[profile[@"isLocal"]boolValue];NSArray *localIDs=[profile[@"localCacheIDs"]copy]?:@[];NSSet *cachedLocal=[NSSet setWithArray:localIDs];
+    BOOL local=[profile[@"isLocal"]boolValue];
     NSArray *order=[playlistIDs copy];NSString *q=[query copy]?:@"",*key=[sort copy]?:@"title",*kind=[mode copy]?:@"";
     dispatch_async(_queue,^{@autoreleasepool{
         NSString *normalized=Fold(q);
-        NSArray *cacheKey=@[pid?:@"",endpoint?:@"",kind,key,normalized,order?:@[],localIDs];
+        NSArray *cacheKey=@[pid?:@"",endpoint?:@"",kind,key,normalized,order?:@[]];
         NSDictionary *cached=self->_cache[cacheKey];
         NSArray *ids=cached[@"ids"];NSUInteger pending=[cached[@"pending"] unsignedIntegerValue];
         if(!ids){
             NSMutableArray *docs=[NSMutableArray new];NSSet *members=order?[NSSet setWithArray:order]:nil;
             for(NSDictionary *d in self->_documents.allValues){
                 BOOL own=[pid isEqual:d[@"profileID"]]&&[endpoint isEqual:d[@"endpointIdentity"]];
-                if(local){if(!((own&&![d[@"unavailableRemote"]boolValue])||[d[@"downloaded"]boolValue]||[cachedLocal containsObject:d[@"id"]]))continue;}
+                if(local){if(!(own&&![d[@"unavailableRemote"]boolValue]))continue;}
                 else if(pid&&!own)continue;
                 if(members && ![members containsObject:d[@"id"]])continue;
                 if([kind isEqual:@"favorites"]&&![d[@"favorite"] boolValue])continue;

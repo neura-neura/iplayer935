@@ -188,7 +188,6 @@ static void Message(UIViewController *v, NSString *s) {
         self.definesPresentationContext = YES;
     }
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(localMediaChanged) name:@"IPLocalLibraryChanged" object:nil];
-    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(localCacheChanged) name:@"IPLocalCacheChanged" object:nil];
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(preparationChanged) name:@"IPLibraryPreparationChanged" object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(reload)
@@ -224,7 +223,6 @@ static void Message(UIViewController *v, NSString *s) {
     if(self.profile&&!self.refreshTimer)self.refreshTimer=[NSTimer scheduledTimerWithTimeInterval:60 target:self selector:@selector(checkLibraryChanges) userInfo:nil repeats:YES];
 }
 - (void)localMediaChanged {if(IPIsLocalProfile(self.profile))[self checkLibraryChanges];}
-- (void)localCacheChanged {if(IPIsLocalProfile(self.profile))[self reload];}
 - (void)checkLibraryChanges {if(self.profile&&self.visible)[S() refreshProfileIfNeeded:self.profile];}
 - (void)prioritizeMetadata {
     NSMutableArray *tracks=[NSMutableArray new];
@@ -330,7 +328,7 @@ static void Message(UIViewController *v, NSString *s) {
                : [NSString stringWithFormat:@"%@%@ %@", [r[@"favorite"] boolValue] ? @"★ " : @"",
                                             [r[@"downloaded"] boolValue] ? @"↓" : @"",
                                             r[@"title"] ?: IPL(@"Sin título")];
-    c.detailTextLabel.text=server&&IPIsLocalProfile(r)?IPL(@"iTunes, downloads and local files"):server?[NSString stringWithFormat:@"%@/%@ · %@",r[@"host"],r[@"share"],r[@"username"]?:@""]:list?[NSString stringWithFormat:IPL(@"%lu canciones%@%@"),(unsigned long)[r[@"trackIDs"] count],r[@"sourceName"]?@" · ":@"",r[@"sourceName"]?:@""]:[NSString stringWithFormat:@"%@ · %@ · %@%@",r[@"artist"]?:@"",r[@"album"]?:@"",IPProfileName([S() profileForTrack:r])?:r[@"sourceName"]?:IPL(@"Origen no disponible"),r[@"unsupportedReason"]?IPL(@" · ⚠ formato"):([r[@"unavailableRemote"] boolValue]?IPL(@" · sin acceso remoto"):@"")];
+    c.detailTextLabel.text=server&&IPIsLocalProfile(r)?IPL(@"iTunes and local files"):server?[NSString stringWithFormat:@"%@/%@ · %@",r[@"host"],r[@"share"],r[@"username"]?:@""]:list?[NSString stringWithFormat:IPL(@"%lu canciones%@%@"),(unsigned long)[r[@"trackIDs"] count],r[@"sourceName"]?@" · ":@"",r[@"sourceName"]?:@""]:[NSString stringWithFormat:@"%@ · %@ · %@%@",r[@"artist"]?:@"",r[@"album"]?:@"",IPProfileName([S() profileForTrack:r])?:r[@"sourceName"]?:IPL(@"Origen no disponible"),r[@"unsupportedReason"]?IPL(@" · ⚠ formato"):([r[@"unavailableRemote"] boolValue]?IPL(@" · sin acceso remoto"):@"")];
     c.accessoryType = server&&IPIsLocalProfile(r)?UITableViewCellAccessoryNone:UITableViewCellAccessoryDetailButton;
     return c;
 }
@@ -714,7 +712,7 @@ static void Message(UIViewController *v, NSString *s) {
                      }];
              }];
 
-        } else [self action:a title:IPL(@"Local music folders") block:^{Message(self,IPL(@"Local includes iTunes music, completed app downloads and readable audio files in this app's Documents folder or /var/mobile/Media. Copy files into Documents using file sharing, or into a music folder under /var/mobile/Media using a file manager. Photos and system folders are skipped. Protected or cloud-only iTunes items cannot be played. This built-in source cannot be edited or deleted."));}];
+        } else [self action:a title:IPL(@"Local music folders") block:^{Message(self,IPL(@"Local includes iTunes music and readable audio files in this app's Documents folder or /var/mobile/Media. Copy files into Documents using file sharing, or into a music folder under /var/mobile/Media using a file manager. Photos and system folders are skipped. Protected or cloud-only iTunes items cannot be played. This built-in source cannot be edited or deleted."));}];
     }
     if (self.search) {
         [self action:a title:IPL(@"Seleccionar canciones") block:^{[self add];}];
