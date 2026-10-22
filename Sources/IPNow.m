@@ -21,7 +21,7 @@ static UIImage *IPSymbol(NSInteger kind, BOOL active) {
     CGContextRef c = UIGraphicsGetCurrentContext();
     CGContextSetFillColorWithColor(c, [UIColor colorWithWhite:
 #if defined(IP_IOS6)
-.88
+.22
 #else
 .17
 #endif
@@ -194,28 +194,35 @@ static UIImage *IPPlaceholder(void) {
 }
 #if defined(IP_IOS6)
 - (void)installLegacyPlayerAppearance {
-    self.view.backgroundColor=[UIColor blackColor];self.art.backgroundColor=[UIColor colorWithWhite:.08 alpha:1];
-    UINavigationBar *bar=self.navigationController.navigationBar;bar.barStyle=UIBarStyleBlack;bar.tintColor=[UIColor colorWithWhite:.14 alpha:1];
-    [bar setBackgroundImage:IPLegacySurface(YES) forBarMetrics:UIBarMetricsDefault];
-    bar.titleTextAttributes=@{UITextAttributeTextColor:[UIColor whiteColor],UITextAttributeTextShadowColor:[UIColor blackColor]};
+    self.view.backgroundColor=[UIColor colorWithWhite:.87 alpha:1];self.art.backgroundColor=[UIColor colorWithWhite:.92 alpha:1];
+    UINavigationBar *bar=self.navigationController.navigationBar;bar.barStyle=UIBarStyleDefault;bar.tintColor=[UIColor colorWithWhite:.65 alpha:1];
+    [bar setBackgroundImage:IPLegacySurface(NO) forBarMetrics:UIBarMetricsDefault];
+    bar.titleTextAttributes=@{UITextAttributeTextColor:[UIColor darkGrayColor],UITextAttributeTextShadowColor:[UIColor whiteColor]};
     UIView *heading=[[UIView alloc]initWithFrame:CGRectMake(0,0,180,43)];
     [heading addSubview:self.titleLabel];[heading addSubview:self.subtitle];
-    self.titleLabel.font=[UIFont boldSystemFontOfSize:13];self.titleLabel.textColor=[UIColor whiteColor];self.titleLabel.frame=CGRectMake(0,13,180,16);
-    self.subtitle.font=[UIFont boldSystemFontOfSize:10];self.subtitle.textColor=[UIColor lightGrayColor];self.subtitle.frame=CGRectMake(0,0,180,13);
-    self.albumLabel=[UILabel new];self.albumLabel.font=[UIFont boldSystemFontOfSize:10];self.albumLabel.textColor=[UIColor lightGrayColor];self.albumLabel.backgroundColor=[UIColor clearColor];self.albumLabel.textAlignment=NSTextAlignmentCenter;self.albumLabel.frame=CGRectMake(0,29,180,13);[heading addSubview:self.albumLabel];
+    self.titleLabel.font=[UIFont boldSystemFontOfSize:13];self.titleLabel.textColor=[UIColor colorWithWhite:.15 alpha:1];self.titleLabel.frame=CGRectMake(0,13,180,16);
+    self.subtitle.font=[UIFont boldSystemFontOfSize:10];self.subtitle.textColor=[UIColor darkGrayColor];self.subtitle.frame=CGRectMake(0,0,180,13);
+    self.albumLabel=[UILabel new];self.albumLabel.font=[UIFont boldSystemFontOfSize:10];self.albumLabel.textColor=[UIColor darkGrayColor];self.albumLabel.backgroundColor=[UIColor clearColor];self.albumLabel.textAlignment=NSTextAlignmentCenter;self.albumLabel.frame=CGRectMake(0,29,180,13);[heading addSubview:self.albumLabel];
     heading.autoresizingMask=UIViewAutoresizingFlexibleWidth;self.navigationItem.titleView=heading;
-    self.scrubPanel=[UIView new];self.scrubPanel.backgroundColor=[UIColor colorWithWhite:0 alpha:.72];[self.view addSubview:self.scrubPanel];
+    self.scrubPanel=[UIView new];self.scrubPanel.backgroundColor=[UIColor colorWithWhite:.94 alpha:.94];[self.view addSubview:self.scrubPanel];
     for(UIView *view in @[self.slider,self.elapsed,self.remaining])[self.scrubPanel addSubview:view];
-    self.elapsed.textColor=[UIColor lightGrayColor];self.remaining.textColor=[UIColor lightGrayColor];
+    self.elapsed.textColor=[UIColor darkGrayColor];self.remaining.textColor=[UIColor darkGrayColor];
     // Native iOS 6 sliders supply the metallic knob, including the volume slider.
-    [self.slider setThumbImage:nil forState:UIControlStateNormal];self.slider.minimumTrackTintColor=[UIColor lightGrayColor];self.slider.maximumTrackTintColor=[UIColor colorWithWhite:.25 alpha:1];
-    self.transportPanel=[[UIImageView alloc]initWithImage:IPLegacySurface(YES)];self.transportPanel.userInteractionEnabled=YES;[self.view insertSubview:self.transportPanel aboveSubview:self.art];
+    [self.slider setThumbImage:nil forState:UIControlStateNormal];self.slider.minimumTrackTintColor=[UIColor colorWithWhite:.44 alpha:1];self.slider.maximumTrackTintColor=[UIColor colorWithWhite:.75 alpha:1];
+    self.transportPanel=[[UIImageView alloc]initWithImage:IPLegacySurface(NO)];self.transportPanel.userInteractionEnabled=YES;[self.view insertSubview:self.transportPanel aboveSubview:self.art];
     for(UIButton *button in @[self.previous,self.play,self.next]){
         [button setBackgroundImage:IPLegacyButton(NO) forState:UIControlStateNormal];[button setBackgroundImage:IPLegacyButton(YES) forState:UIControlStateHighlighted];[button setBackgroundImage:IPLegacyButton(YES) forState:UIControlStateSelected];
     }
-    for(UIButton *button in @[self.favorite,self.queueButton]){[button setTitleColor:[UIColor lightGrayColor] forState:UIControlStateNormal];[button setTitleShadowColor:[UIColor blackColor] forState:UIControlStateNormal];button.titleLabel.shadowOffset=CGSizeMake(0,-1);}
-    self.shuffleOff=IPLegacyTint(IPControlImage(IPControlIconShuffle),[UIColor lightGrayColor]);self.shuffleOn=IPLegacyTint(IPControlImage(IPControlIconShuffle),IPLegacyAccent());
-    self.origin.textColor=[UIColor colorWithWhite:.55 alpha:1];self.origin.font=[UIFont systemFontOfSize:9];
+    for(UIButton *button in @[self.favorite,self.queueButton]){[button setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal];[button setTitleShadowColor:[UIColor whiteColor] forState:UIControlStateNormal];button.titleLabel.shadowOffset=CGSizeMake(0,1);}
+    self.shuffleOff=IPLegacyTint(IPControlImage(IPControlIconShuffle),[UIColor darkGrayColor]);self.shuffleOn=IPLegacyTint(IPControlImage(IPControlIconShuffle),IPLegacyAccent());
+    // Keep the route control legible against the silver panel.
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(24,20),NO,0);
+    CGContextRef route=UIGraphicsGetCurrentContext();CGContextSetStrokeColorWithColor(route,[UIColor darkGrayColor].CGColor);CGContextSetFillColorWithColor(route,[UIColor darkGrayColor].CGColor);CGContextSetLineWidth(route,1.5);
+    CGContextMoveToPoint(route,3,13);CGContextAddLineToPoint(route,3,3);CGContextAddLineToPoint(route,21,3);CGContextAddLineToPoint(route,21,13);CGContextStrokePath(route);
+    CGContextMoveToPoint(route,12,10);CGContextAddLineToPoint(route,5,18);CGContextAddLineToPoint(route,19,18);CGContextClosePath(route);CGContextFillPath(route);
+    UIImage *routeImage=UIGraphicsGetImageFromCurrentImageContext();UIGraphicsEndImageContext();
+    [self.volume setRouteButtonImage:routeImage forState:UIControlStateNormal];[self.volume setRouteButtonImage:IPLegacyTint(routeImage,IPLegacyAccent()) forState:UIControlStateHighlighted];
+    self.origin.textColor=[UIColor colorWithWhite:.36 alpha:1];self.origin.font=[UIFont systemFontOfSize:9];
     self.art.userInteractionEnabled=YES;UITapGestureRecognizer *tap=[[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(toggleLegacyScrubber)];[self.art addGestureRecognizer:tap];
 }
 - (void)toggleLegacyScrubber {self.scrubPanel.hidden=!self.scrubPanel.hidden;}
@@ -308,7 +315,7 @@ static UIImage *IPPlaceholder(void) {
     [self.favorite setTitle:[t[@"favorite"] boolValue] ? @"♥" : @"♡" forState:0];
 #if defined(IP_IOS6)
     self.play.selected=p.playing;
-    [self.favorite setTitleColor:[t[@"favorite"]boolValue]?IPLegacyAccent():[UIColor lightGrayColor] forState:UIControlStateNormal];
+    [self.favorite setTitleColor:[t[@"favorite"]boolValue]?IPLegacyAccent():[UIColor darkGrayColor] forState:UIControlStateNormal];
     [self.shuffleButton setImage:p.shuffleEnabled?self.shuffleOn:self.shuffleOff forState:UIControlStateNormal];
 #endif
     self.shuffleButton.tintColor=p.shuffleEnabled?IPAccent():[UIColor grayColor];

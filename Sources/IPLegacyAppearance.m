@@ -16,7 +16,7 @@ UIImage *IPLegacySurface(BOOL dark){
             Gradient(CGRectMake(0,0,2,44),i?.20:.97,i?.055:.73);
             [[UIColor colorWithWhite:i?.33:1 alpha:1]setFill];UIRectFill(CGRectMake(0,0,2,.5));
             [[UIColor colorWithWhite:i?0:.52 alpha:1]setFill];UIRectFill(CGRectMake(0,43.5,2,.5));
-            UIImage *image=[UIGraphicsGetImageFromCurrentImageContext()resizableImageWithCapInsets:UIEdgeInsetsZero];
+            UIImage *image=[UIGraphicsGetImageFromCurrentImageContext()resizableImageWithCapInsets:UIEdgeInsetsZero resizingMode:UIImageResizingModeStretch];
             UIGraphicsEndImageContext();if(i)black=image;else light=image;
         }
     });return dark?black:light;
@@ -26,9 +26,9 @@ UIImage *IPLegacyButton(BOOL pressed){
     dispatch_once(&once,^{for(int i=0;i<2;i++){
         UIGraphicsBeginImageContextWithOptions(CGSizeMake(44,44),NO,0);
         UIBezierPath *path=[UIBezierPath bezierPathWithRoundedRect:CGRectMake(.5,.5,43,43) cornerRadius:5];
-        CGContextSaveGState(UIGraphicsGetCurrentContext());[path addClip];Gradient(CGRectMake(0,0,44,44),i?.09:.23,i?.16:.065);CGContextRestoreGState(UIGraphicsGetCurrentContext());
-        [[UIColor colorWithWhite:0 alpha:.9]setStroke];path.lineWidth=1;[path stroke];
-        UIImage *image=[UIGraphicsGetImageFromCurrentImageContext()resizableImageWithCapInsets:UIEdgeInsetsMake(7,7,7,7)];
+        CGContextSaveGState(UIGraphicsGetCurrentContext());[path addClip];Gradient(CGRectMake(0,0,44,44),i?.68:.98,i?.84:.74);CGContextRestoreGState(UIGraphicsGetCurrentContext());
+        [[UIColor colorWithWhite:.52 alpha:1]setStroke];path.lineWidth=1;[path stroke];
+        UIImage *image=[UIGraphicsGetImageFromCurrentImageContext()resizableImageWithCapInsets:UIEdgeInsetsMake(7,7,7,7) resizingMode:UIImageResizingModeStretch];
         UIGraphicsEndImageContext();if(i)down=image;else normal=image;
     }});return pressed?down:normal;
 }
