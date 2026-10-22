@@ -363,3 +363,10 @@ Visual reference inspected: https://ijunkie.com/music-app-revamped-in-ios-6/ (Ju
 ### Legacy build 39 — unified silver playback background
 
 The user liked the controls/layout but rejected the dark background and repeated black bands. The build 38 on-device player preview confirmed repeated vertical gradient bands. Legacy surface/button resizable images now explicitly use UIImageResizingModeStretch (available in iOS 6) instead of the default tiling mode. Full playback keeps its artwork, three-line metadata, controls and tap-to-toggle scrubber arrangement, with silver surfaces and dark foregrounds for contrast. The AirPlay control has a matching small route image. No playback, indexing or iOS 9 paths changed. ARMv7 iOS 6 build passed; visual confirmation of build 39 remains pending. Saved only in local Git.
+
+
+### Legacy build 40 — persistent player background selection
+
+User approved the unified silver layout. Reproduciendo → settings wheel now opens Player settings, with Silver/Black radio rows under Player background and the existing Crossfade screen under Audio. New labels and help are available in English, Spanish and Simplified Chinese. Selection is stored in NSUserDefaults, applied on returning to playback and on subsequent launches; absent/unknown values use silver. Both variants retain the same layout and use stretched surfaces. Foreground, transport, scrubber and AirPlay images adapt for contrast. Images are reused during timer updates; switching does not reload the library or recreate the audio engine.
+
+Both targets compile and localization tests pass. USB installation succeeded. At the user's request, only IPPlayerBackground=black was set in the installed app's preferences while it was stopped after installation; a read-back comparison verified every other preference was retained. Device visual review and selection/restart verification remain pending. iOS 9 behavior is outside this conditional feature; no GitHub push.

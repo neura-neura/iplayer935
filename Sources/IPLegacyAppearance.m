@@ -21,16 +21,16 @@ UIImage *IPLegacySurface(BOOL dark){
         }
     });return dark?black:light;
 }
-UIImage *IPLegacyButton(BOOL pressed){
-    static UIImage *normal,*down;static dispatch_once_t once;
-    dispatch_once(&once,^{for(int i=0;i<2;i++){
+BOOL IPLegacyPlayerIsDark(void){return [[[NSUserDefaults standardUserDefaults]stringForKey:@"IPPlayerBackground"]isEqual:@"black"];}
+UIImage *IPLegacyButton(BOOL pressed,BOOL dark){
+    static NSArray *images;static dispatch_once_t once;
+    dispatch_once(&once,^{NSMutableArray *result=[NSMutableArray new];for(int theme=0;theme<2;theme++)for(int i=0;i<2;i++){
         UIGraphicsBeginImageContextWithOptions(CGSizeMake(44,44),NO,0);
         UIBezierPath *path=[UIBezierPath bezierPathWithRoundedRect:CGRectMake(.5,.5,43,43) cornerRadius:5];
-        CGContextSaveGState(UIGraphicsGetCurrentContext());[path addClip];Gradient(CGRectMake(0,0,44,44),i?.68:.98,i?.84:.74);CGContextRestoreGState(UIGraphicsGetCurrentContext());
-        [[UIColor colorWithWhite:.52 alpha:1]setStroke];path.lineWidth=1;[path stroke];
-        UIImage *image=[UIGraphicsGetImageFromCurrentImageContext()resizableImageWithCapInsets:UIEdgeInsetsMake(7,7,7,7) resizingMode:UIImageResizingModeStretch];
-        UIGraphicsEndImageContext();if(i)down=image;else normal=image;
-    }});return pressed?down:normal;
+        CGContextSaveGState(UIGraphicsGetCurrentContext());[path addClip];Gradient(CGRectMake(0,0,44,44),theme?(i?.09:.23):(i?.68:.98),theme?(i?.16:.065):(i?.84:.74));CGContextRestoreGState(UIGraphicsGetCurrentContext());
+        [[UIColor colorWithWhite:theme?0:.52 alpha:1]setStroke];path.lineWidth=1;[path stroke];
+        [result addObject:[UIGraphicsGetImageFromCurrentImageContext()resizableImageWithCapInsets:UIEdgeInsetsMake(7,7,7,7) resizingMode:UIImageResizingModeStretch]];UIGraphicsEndImageContext();
+    }images=[result copy];});return images[(dark?2:0)+(pressed?1:0)];
 }
 UIImage *IPLegacyTint(UIImage *image,UIColor *color){
     UIGraphicsBeginImageContextWithOptions(image.size,NO,image.scale);

@@ -2,7 +2,8 @@
 #import <UIKit/UIKit.h>
 UIColor *IPLegacyAccent(void);
 UIImage *IPLegacySurface(BOOL dark);
-UIImage *IPLegacyButton(BOOL pressed);
+BOOL IPLegacyPlayerIsDark(void);
+UIImage *IPLegacyButton(BOOL pressed,BOOL dark);
 UIImage *IPLegacyTint(UIImage *image,UIColor *color);
 void IPLegacyInstallAppearance(void);
 #endif

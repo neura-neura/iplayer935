@@ -2,6 +2,7 @@
 #import "IPLocalLibrary.h"
 #import "IPNow.h"
 #import "IPLegacyAppearance.h"
+#import "IPLegacyPlayerSettings.h"
 #import "IPPlayer.h"
 #import "IPControlIcons.h"
 #import "IPCrossfade.h"
@@ -80,7 +81,8 @@ static UIImage *IPPlaceholder(void) {
 #if defined(IP_IOS6)
 @property(nonatomic,strong) UIView *scrubPanel,*transportPanel;
 @property(nonatomic,strong) UILabel *albumLabel;
-@property(nonatomic,strong) UIImage *shuffleOff,*shuffleOn;
+@property(nonatomic,strong) UIImage *shuffleOff,*shuffleOn,*routeImage;
+@property(nonatomic,strong) NSNumber *appliedDark;
 #endif
 @end
 @implementation IPNow
@@ -189,6 +191,8 @@ static UIImage *IPPlaceholder(void) {
                                                object:nil];
 #if defined(IP_IOS6)
     [self installLegacyPlayerAppearance];
+    [self applyLegacyPlayerBackground];
+    self.navigationItem.rightBarButtonItem.accessibilityLabel=IPL(@"Player settings");
 #endif
     [self refresh];
 }
@@ -211,7 +215,7 @@ static UIImage *IPPlaceholder(void) {
     [self.slider setThumbImage:nil forState:UIControlStateNormal];self.slider.minimumTrackTintColor=[UIColor colorWithWhite:.44 alpha:1];self.slider.maximumTrackTintColor=[UIColor colorWithWhite:.75 alpha:1];
     self.transportPanel=[[UIImageView alloc]initWithImage:IPLegacySurface(NO)];self.transportPanel.userInteractionEnabled=YES;[self.view insertSubview:self.transportPanel aboveSubview:self.art];
     for(UIButton *button in @[self.previous,self.play,self.next]){
-        [button setBackgroundImage:IPLegacyButton(NO) forState:UIControlStateNormal];[button setBackgroundImage:IPLegacyButton(YES) forState:UIControlStateHighlighted];[button setBackgroundImage:IPLegacyButton(YES) forState:UIControlStateSelected];
+        [button setBackgroundImage:IPLegacyButton(NO,NO) forState:UIControlStateNormal];[button setBackgroundImage:IPLegacyButton(YES,NO) forState:UIControlStateHighlighted];[button setBackgroundImage:IPLegacyButton(YES,NO) forState:UIControlStateSelected];
     }
     for(UIButton *button in @[self.favorite,self.queueButton]){[button setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal];[button setTitleShadowColor:[UIColor whiteColor] forState:UIControlStateNormal];button.titleLabel.shadowOffset=CGSizeMake(0,1);}
     self.shuffleOff=IPLegacyTint(IPControlImage(IPControlIconShuffle),[UIColor darkGrayColor]);self.shuffleOn=IPLegacyTint(IPControlImage(IPControlIconShuffle),IPLegacyAccent());
@@ -220,10 +224,29 @@ static UIImage *IPPlaceholder(void) {
     CGContextRef route=UIGraphicsGetCurrentContext();CGContextSetStrokeColorWithColor(route,[UIColor darkGrayColor].CGColor);CGContextSetFillColorWithColor(route,[UIColor darkGrayColor].CGColor);CGContextSetLineWidth(route,1.5);
     CGContextMoveToPoint(route,3,13);CGContextAddLineToPoint(route,3,3);CGContextAddLineToPoint(route,21,3);CGContextAddLineToPoint(route,21,13);CGContextStrokePath(route);
     CGContextMoveToPoint(route,12,10);CGContextAddLineToPoint(route,5,18);CGContextAddLineToPoint(route,19,18);CGContextClosePath(route);CGContextFillPath(route);
-    UIImage *routeImage=UIGraphicsGetImageFromCurrentImageContext();UIGraphicsEndImageContext();
+    UIImage *routeImage=UIGraphicsGetImageFromCurrentImageContext();UIGraphicsEndImageContext();self.routeImage=routeImage;
     [self.volume setRouteButtonImage:routeImage forState:UIControlStateNormal];[self.volume setRouteButtonImage:IPLegacyTint(routeImage,IPLegacyAccent()) forState:UIControlStateHighlighted];
     self.origin.textColor=[UIColor colorWithWhite:.36 alpha:1];self.origin.font=[UIFont systemFontOfSize:9];
     self.art.userInteractionEnabled=YES;UITapGestureRecognizer *tap=[[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(toggleLegacyScrubber)];[self.art addGestureRecognizer:tap];
+}
+- (void)applyLegacyPlayerBackground {
+    BOOL dark=IPLegacyPlayerIsDark();if(self.appliedDark&&self.appliedDark.boolValue==dark)return;
+    self.appliedDark=@(dark);
+    UIColor *foreground=dark?[UIColor lightGrayColor]:[UIColor darkGrayColor],*shadow=dark?[UIColor blackColor]:[UIColor whiteColor];
+    self.view.backgroundColor=[UIColor colorWithWhite:dark?.06:.87 alpha:1];self.art.backgroundColor=[UIColor colorWithWhite:dark?.08:.92 alpha:1];
+    UINavigationBar *bar=self.navigationController.navigationBar;bar.barStyle=dark?UIBarStyleBlack:UIBarStyleDefault;bar.tintColor=[UIColor colorWithWhite:dark?.14:.65 alpha:1];
+    [bar setBackgroundImage:IPLegacySurface(dark) forBarMetrics:UIBarMetricsDefault];bar.titleTextAttributes=@{UITextAttributeTextColor:foreground,UITextAttributeTextShadowColor:shadow};
+    self.titleLabel.textColor=dark?[UIColor whiteColor]:[UIColor colorWithWhite:.15 alpha:1];self.subtitle.textColor=foreground;self.albumLabel.textColor=foreground;
+    self.scrubPanel.backgroundColor=[UIColor colorWithWhite:dark?0:.94 alpha:dark?.72:.94];self.elapsed.textColor=foreground;self.remaining.textColor=foreground;
+    self.slider.minimumTrackTintColor=[UIColor colorWithWhite:dark?.7:.44 alpha:1];self.slider.maximumTrackTintColor=[UIColor colorWithWhite:dark?.25:.75 alpha:1];
+    [(UIImageView *)self.transportPanel setImage:IPLegacySurface(dark)];
+    self.playIcon=IPLegacyTint(IPSymbol(1,NO),foreground);self.pauseIcon=IPLegacyTint(IPSymbol(1,YES),foreground);
+    [self.previous setImage:IPLegacyTint(IPSymbol(0,NO),foreground) forState:UIControlStateNormal];[self.next setImage:IPLegacyTint(IPSymbol(2,NO),foreground) forState:UIControlStateNormal];
+    for(UIButton *button in @[self.previous,self.play,self.next]){[button setBackgroundImage:IPLegacyButton(NO,dark) forState:UIControlStateNormal];[button setBackgroundImage:IPLegacyButton(YES,dark) forState:UIControlStateHighlighted];[button setBackgroundImage:IPLegacyButton(YES,dark) forState:UIControlStateSelected];}
+    for(UIButton *button in @[self.favorite,self.queueButton]){[button setTitleColor:foreground forState:UIControlStateNormal];[button setTitleShadowColor:shadow forState:UIControlStateNormal];button.titleLabel.shadowOffset=CGSizeMake(0,dark?-1:1);}
+    self.shuffleOff=IPLegacyTint(IPControlImage(IPControlIconShuffle),foreground);
+    [self.volume setRouteButtonImage:IPLegacyTint(self.routeImage,foreground) forState:UIControlStateNormal];
+    self.origin.textColor=[UIColor colorWithWhite:dark?.6:.36 alpha:1];
 }
 - (void)toggleLegacyScrubber {self.scrubPanel.hidden=!self.scrubPanel.hidden;}
 #endif
@@ -315,7 +338,7 @@ static UIImage *IPPlaceholder(void) {
     [self.favorite setTitle:[t[@"favorite"] boolValue] ? @"♥" : @"♡" forState:0];
 #if defined(IP_IOS6)
     self.play.selected=p.playing;
-    [self.favorite setTitleColor:[t[@"favorite"]boolValue]?IPLegacyAccent():[UIColor darkGrayColor] forState:UIControlStateNormal];
+    [self.favorite setTitleColor:[t[@"favorite"]boolValue]?IPLegacyAccent():(self.appliedDark.boolValue?[UIColor lightGrayColor]:[UIColor darkGrayColor]) forState:UIControlStateNormal];
     [self.shuffleButton setImage:p.shuffleEnabled?self.shuffleOn:self.shuffleOff forState:UIControlStateNormal];
 #endif
     self.shuffleButton.tintColor=p.shuffleEnabled?IPAccent():[UIColor grayColor];
@@ -338,7 +361,13 @@ static UIImage *IPPlaceholder(void) {
     [[IPPlayer shared] toggle];
     [self refresh];
 }
-- (void)audioSettings {[self.navigationController pushViewController:[IPCrossfadeSettings new] animated:YES];}
+- (void)audioSettings {
+#if defined(IP_IOS6)
+    [self.navigationController pushViewController:[IPLegacyPlayerSettings new] animated:YES];
+#else
+    [self.navigationController pushViewController:[IPCrossfadeSettings new] animated:YES];
+#endif
+}
 #if !defined(IP_IOS6)
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gesture {return [IPPlayer shared].crossfade.enabled&&[IPPlayer shared].crossfade.sessionControl;}
 #endif
@@ -373,6 +402,10 @@ static UIImage *IPPlaceholder(void) {
 }
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
+#if defined(IP_IOS6)
+    // Settings temporarily use the silver navigation bar; restore even if the choice is unchanged.
+    self.appliedDark=nil;[self applyLegacyPlayerBackground];
+#endif
     if (!self.timer)
         self.timer = [NSTimer scheduledTimerWithTimeInterval:1
                                                       target:self

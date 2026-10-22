@@ -348,3 +348,15 @@
 "Could not save library." = "Could not save library.";
 
 "Orange: outgoing track. Green: incoming track. Equal power keeps the mix energy constant; linear reduces both volumes evenly." = "Orange: outgoing track. Green: incoming track. Equal power keeps the mix energy constant; linear reduces both volumes evenly.";
+
+"Player settings" = "Player settings";
+
+"Player background" = "Player background";
+
+"Audio" = "Audio";
+
+"Silver" = "Silver";
+
+"Black" = "Black";
+
+"Your background choice is saved and applied when you return to the player." = "Your background choice is saved and applied when you return to the player.";

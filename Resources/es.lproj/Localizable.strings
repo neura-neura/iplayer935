@@ -348,3 +348,15 @@
 "Could not save library." = "No se pudo guardar la biblioteca.";
 
 "Orange: outgoing track. Green: incoming track. Equal power keeps the mix energy constant; linear reduces both volumes evenly." = "Naranja: canción saliente. Verde: entrante. Potencia constante conserva la energía de la mezcla; lineal reduce ambos volúmenes de forma uniforme.";
+
+"Player settings" = "Ajustes del reproductor";
+
+"Player background" = "Fondo del reproductor";
+
+"Audio" = "Audio";
+
+"Silver" = "Plateado";
+
+"Black" = "Negro";
+
+"Your background choice is saved and applied when you return to the player." = "El fondo elegido se guarda y se aplica al volver al reproductor.";
