@@ -80,7 +80,11 @@ static UIImage *IPPlaceholder(void) {
     return l;
 }
 - (UIButton *)button:(NSString *)title action:(SEL)action {
+    #if defined(IP_IOS6)
+    UIButton *b = [UIButton buttonWithType:UIButtonTypeCustom];
+#else
     UIButton *b = [UIButton buttonWithType:UIButtonTypeSystem];
+#endif
     [b setTitle:title forState:0];
     b.tintColor = IPAccent();
     [b addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
@@ -94,8 +98,12 @@ static UIImage *IPPlaceholder(void) {
     self.navigationItem.rightBarButtonItem=[[UIBarButtonItem alloc]initWithImage:IPControlImage(IPControlIconOptions) style:0 target:self action:@selector(audioSettings)];self.navigationItem.rightBarButtonItem.accessibilityLabel=IPL(@"Ajustes de audio");
     self.navigationItem.backBarButtonItem=[[UIBarButtonItem alloc]initWithTitle:IPL(@"Atrás") style:0 target:nil action:nil];
     self.navigationItem.leftBarButtonItem=[[UIBarButtonItem alloc]initWithTitle:IPL(@"Atrás") style:UIBarButtonItemStylePlain target:self action:@selector(closePlayer)];
+#if defined(IP_IOS6)
+    UIPanGestureRecognizer *back=[[UIPanGestureRecognizer alloc]initWithTarget:self action:@selector(edgeBack:)];back.delegate=self;[self.view addGestureRecognizer:back];
+#else
     UIScreenEdgePanGestureRecognizer *back=[[UIScreenEdgePanGestureRecognizer alloc]initWithTarget:self action:@selector(edgeBack:)];back.edges=UIRectEdgeLeft;[self.view addGestureRecognizer:back];
     [self.navigationController.interactivePopGestureRecognizer requireGestureRecognizerToFail:back];
+#endif
     self.view.backgroundColor = [UIColor colorWithWhite:.985 alpha:1];
     self.edgesForExtendedLayout = UIRectEdgeNone;
     self.placeholder = IPPlaceholder();
@@ -180,7 +188,14 @@ static UIImage *IPPlaceholder(void) {
     self.queueButton.frame = CGRectMake(w - 65, h - 44, 46, 40);
     self.shuffleButton.frame=CGRectMake(w/2-23,h-44,46,40);
 }
-- (void)edgeBack:(UIScreenEdgePanGestureRecognizer *)gesture {
+#if defined(IP_IOS6)
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gesture {
+    if(![gesture isKindOfClass:[UIPanGestureRecognizer class]])return [IPPlayer shared].crossfade.enabled&&[IPPlayer shared].crossfade.sessionControl;
+    CGPoint origin=[gesture locationInView:self.view];CGPoint motion=[(UIPanGestureRecognizer *)gesture translationInView:self.view];
+    return origin.x-motion.x<=24&&motion.x>0&&fabs(motion.x)>fabs(motion.y);
+}
+#endif
+- (void)edgeBack:(UIPanGestureRecognizer *)gesture {
     if(gesture.state!=UIGestureRecognizerStateEnded)return;
     CGFloat x=[gesture translationInView:self.view].x,velocity=[gesture velocityInView:self.view].x;
     if(x>MAX(60,self.view.bounds.size.width*.22)||(x>20&&velocity>450))[self closePlayer];
@@ -244,7 +259,9 @@ static UIImage *IPPlaceholder(void) {
     [self refresh];
 }
 - (void)audioSettings {[self.navigationController pushViewController:[IPCrossfadeSettings new] animated:YES];}
+#if !defined(IP_IOS6)
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gesture {return [IPPlayer shared].crossfade.enabled&&[IPPlayer shared].crossfade.sessionControl;}
+#endif
 - (void)holdShuffle:(UILongPressGestureRecognizer *)gesture {if(gesture.state==UIGestureRecognizerStateBegan)[[IPPlayer shared]toggleCrossfadeSession];}
 - (void)toggleShuffle {[[IPPlayer shared]toggleShuffle];[self refresh];}
 - (void)favoriteTrack {
@@ -288,7 +305,11 @@ static UIImage *IPPlaceholder(void) {
     [super viewDidAppear:animated];
     dispatch_async(dispatch_get_main_queue(), ^{
         UIGraphicsBeginImageContextWithOptions(self.view.bounds.size, YES, 1);
+        #if defined(IP_IOS6)
+        [self.view.layer renderInContext:UIGraphicsGetCurrentContext()];
+#else
         [self.view drawViewHierarchyInRect:self.view.bounds afterScreenUpdates:YES];
+#endif
         UIImage *preview=UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();
         NSURL *url=[[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].firstObject URLByAppendingPathComponent:@"player-preview.png"];

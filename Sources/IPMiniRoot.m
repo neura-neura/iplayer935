@@ -27,8 +27,20 @@ static UIImage *MiniSymbol(NSInteger kind) {
     self.song=[UILabel new];self.song.font=[UIFont systemFontOfSize:13 weight:UIFontWeightMedium];self.song.textAlignment=NSTextAlignmentCenter;[self.mini addSubview:self.song];
     self.artist=[UILabel new];self.artist.font=[UIFont systemFontOfSize:10];self.artist.textAlignment=NSTextAlignmentCenter;self.artist.textColor=[UIColor grayColor];[self.mini addSubview:self.artist];
     UIButton *open=[UIButton buttonWithType:UIButtonTypeCustom];open.tag=91;open.accessibilityLabel=IPL(@"Abrir reproductor completo");[open addTarget:self action:@selector(openPlayer) forControlEvents:UIControlEventTouchUpInside];[self.mini addSubview:open];
-    self.playButton=[UIButton buttonWithType:UIButtonTypeSystem];self.playIcon=MiniSymbol(0);self.pauseIcon=MiniSymbol(1);[self.playButton addTarget:self action:@selector(toggle) forControlEvents:UIControlEventTouchUpInside];[self.mini addSubview:self.playButton];
-    self.nextButton=[UIButton buttonWithType:UIButtonTypeSystem];[self.nextButton setImage:MiniSymbol(2) forState:0];self.nextButton.accessibilityLabel=IPL(@"Más opciones de reproducción");[self.nextButton addTarget:self action:@selector(more) forControlEvents:UIControlEventTouchUpInside];[self.mini addSubview:self.nextButton];
+    self.playButton=[UIButton buttonWithType:
+#if defined(IP_IOS6)
+UIButtonTypeCustom
+#else
+UIButtonTypeSystem
+#endif
+];self.playIcon=MiniSymbol(0);self.pauseIcon=MiniSymbol(1);[self.playButton addTarget:self action:@selector(toggle) forControlEvents:UIControlEventTouchUpInside];[self.mini addSubview:self.playButton];
+    self.nextButton=[UIButton buttonWithType:
+#if defined(IP_IOS6)
+UIButtonTypeCustom
+#else
+UIButtonTypeSystem
+#endif
+];[self.nextButton setImage:MiniSymbol(2) forState:0];self.nextButton.accessibilityLabel=IPL(@"Más opciones de reproducción");[self.nextButton addTarget:self action:@selector(more) forControlEvents:UIControlEventTouchUpInside];[self.mini addSubview:self.nextButton];
     self.progress=[UIView new];self.progress.backgroundColor=[UIColor colorWithRed:1 green:.18 blue:.33 alpha:1];[self.mini addSubview:self.progress];
     [self.view addSubview:self.mini];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refresh) name:@"IPPlaybackChanged" object:nil];

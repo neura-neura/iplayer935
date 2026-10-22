@@ -55,3 +55,12 @@ Prebuilt IPA and matching source/relinking archives are distributed through [Git
 
 
 The local library requests read-only access to `/var/mobile/Media/` and its canonical `/private/var/mobile/Media/` alias in the ad-hoc entitlements. Actual access depends on the device jailbreak configuration; Documents and MediaPlayer provide the regular app/system library paths. No write entitlement is added.
+
+
+## Separate iOS 6.1.3 target (local development)
+
+`./scripts/build.sh --ios6` builds `deliverables/iPlayer935-iOS6.ipa`; `./scripts/install.sh --ios6` installs only onto iPod5,1 / iOS 6.1.3. The default commands continue to target iOS 9.3.5. Both use the same bundle ID so settings survive updates on the same device. The regular IPA is not overwritten by the iOS 6 build.
+
+The legacy target defines `IP_IOS6` and force-includes `IPLegacyCompatibility.h` only for Objective-C sources. All legacy implementations and call-site branches compile out of the default target. Legacy menus use UIAlertView/UIActionSheet, search uses UISearchBar, edge navigation uses a bounded pan gesture, remote events use UIResponder, and AVPlayer gain uses an AVAudioMix. FFmpeg is rebuilt with deployment 6.1.3 in a separate `build/codecs/ios-armv7-ios6` prefix. All app/vendor objects remain ARM, not Thumb.
+
+Legacy output, objects and license/source staging are under `build/ios6`; the stable target keeps its existing paths and version. Both IPA targets are local and unpublished during validation. Do not interpret successful installation or codec decoding as completed playback/UI validation.

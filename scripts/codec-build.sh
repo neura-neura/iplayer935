@@ -4,6 +4,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VERSION=4.4.4
 CONFIG_REV=2
+IOS_TARGET=ios-armv7
+IOS_MIN=9.3.5
+if [[ "${IP_IOS6:-0}" == 1 ]]; then IOS_TARGET=ios-armv7-ios6; IOS_MIN=6.1.3; fi
 ARCHIVE="$ROOT/build/cache/ffmpeg-$VERSION.tar.xz"
 SOURCE="$ROOT/build/cache/ffmpeg-$VERSION"
 URL="https://ffmpeg.org/releases/ffmpeg-$VERSION.tar.xz"
@@ -58,9 +61,9 @@ build_target() {
   )
 }
 
-IOS_CFLAGS="-O2 -marm -arch armv7 -isysroot $SDK -miphoneos-version-min=9.3.5"
-IOS_LDFLAGS="-arch armv7 -isysroot $SDK -miphoneos-version-min=9.3.5"
-build_target ios-armv7 \
+IOS_CFLAGS="-O2 -marm -arch armv7 -isysroot $SDK -miphoneos-version-min=$IOS_MIN"
+IOS_LDFLAGS="-arch armv7 -isysroot $SDK -miphoneos-version-min=$IOS_MIN"
+build_target "$IOS_TARGET" \
   --arch=arm --target-os=darwin --cc="${CC:-/usr/bin/clang}" \
   --ar="${AR:-/usr/bin/ar}" --ranlib="${RANLIB:-/usr/bin/ranlib}" \
   --nm="${NM:-/usr/bin/nm}" --strip="${STRIP:-/usr/bin/strip}" \
@@ -68,6 +71,7 @@ build_target ios-armv7 \
   --enable-pic --disable-armv5te --disable-armv6 --disable-neon --disable-vfp --disable-vfpv3
 
 # Native libraries make decoder tests runnable on Apple Silicon without a device.
+if [[ "${IP_IOS6:-0}" != 1 ]]; then
 build_target macos-arm64 \
   --arch=arm64 --target-os=darwin --cc="${CC:-/usr/bin/clang}" \
   --ar="${AR:-/usr/bin/ar}" --ranlib="${RANLIB:-/usr/bin/ranlib}" \
@@ -76,7 +80,10 @@ build_target macos-arm64 \
   --extra-ldflags="-arch arm64 -mmacosx-version-min=13.0" \
   --disable-armv5te --disable-armv6 --disable-neon --disable-vfp --disable-vfpv3
 
-for target in ios-armv7 macos-arm64; do
+fi
+TARGETS=("$IOS_TARGET")
+if [[ "${IP_IOS6:-0}" != 1 ]]; then TARGETS+=(macos-arm64); fi
+for target in "${TARGETS[@]}"; do
   touch "$ROOT/build/codecs/$target/.iplayer935-ffmpeg-$VERSION-config$CONFIG_REV"
 done
 echo "FFmpeg $VERSION LGPL-only static libraries built in build/codecs/{ios-armv7,macos-arm64}."

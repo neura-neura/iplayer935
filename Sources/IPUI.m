@@ -803,12 +803,28 @@ static void Message(UIViewController *v, NSString *s) {
     [self installInterfaceShowingLanguageSettings:NO];
     [self.window makeKeyAndVisible];
     [app beginReceivingRemoteControlEvents];
+#if defined(IP_IOS6)
+    [self becomeFirstResponder];
+#endif
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(languageChanged) name:IPLanguageChangedNotification object:nil];
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(libraryLoaded) name:@"IPLibraryLoaded" object:nil];
     // Return control to UIKit before opening/parsing the saved library.
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW,(int64_t)(.1*NSEC_PER_SEC)),dispatch_get_main_queue(),^{[S() loadLibrary];});
     return YES;
 }
+#if defined(IP_IOS6)
+- (BOOL)canBecomeFirstResponder {return YES;}
+- (void)remoteControlReceivedWithEvent:(UIEvent *)event {
+    IPPlayer *p=[IPPlayer shared];switch(event.subtype){
+        case UIEventSubtypeRemoteControlPlay:if(!p.playing)[p toggle];break;
+        case UIEventSubtypeRemoteControlPause:if(p.playing)[p toggle];break;
+        case UIEventSubtypeRemoteControlTogglePlayPause:[p toggle];break;
+        case UIEventSubtypeRemoteControlNextTrack:[p next];break;
+        case UIEventSubtypeRemoteControlPreviousTrack:[p previous];break;
+        default:break;
+    }
+}
+#endif
 - (void)languageChanged {
     UITabBarController *tabs = (UITabBarController *)self.window.rootViewController;
     UINavigationController *nav = (UINavigationController *)tabs.selectedViewController;

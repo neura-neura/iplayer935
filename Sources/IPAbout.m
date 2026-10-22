@@ -36,6 +36,9 @@
 }
 - (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section { return 64; }
 - (UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
+#if defined(IP_IOS6)
+    UIButton *link=[UIButton buttonWithType:UIButtonTypeCustom];link.frame=CGRectMake(0,0,tableView.bounds.size.width,64);link.titleLabel.font=[UIFont systemFontOfSize:13];[link setTitle:IPL(@"Hecho por: neura-neura") forState:UIControlStateNormal];[link setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];[link addTarget:self action:@selector(openRepository) forControlEvents:UIControlEventTouchUpInside];return link;
+#else
     UITextView *credit = [[UITextView alloc] initWithFrame:CGRectMake(0, 0, tableView.bounds.size.width, 64)];
     credit.backgroundColor = [UIColor clearColor];
     credit.editable = NO;
@@ -54,5 +57,9 @@
     credit.linkTextAttributes = @{NSForegroundColorAttributeName:self.view.tintColor};
     credit.attributedText = value;
     return credit;
+#endif
 }
+#if defined(IP_IOS6)
+- (void)openRepository {NSURL *url=[NSURL URLWithString:[[NSBundle mainBundle]objectForInfoDictionaryKey:@"IPRepositoryURL"]];if(url)[[UIApplication sharedApplication]openURL:url];}
+#endif
 @end

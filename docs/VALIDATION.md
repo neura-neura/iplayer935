@@ -315,3 +315,14 @@ El usuario aprobó los cambios de30 y las composiciones promocionales con datos 
 - SQLite and fallback query regression tests explicitly supply remote downloaded/cached tracks and assert that only the native file is returned. Missing local files remain excluded.
 - Database, fallback index, Store and session/cache host suites passed; 341-key English/Spanish/Chinese catalog validation passed. ARMv7 build passed.
 - README and UI help reflect the narrower source. Saved only in local Git; no push or release.
+
+
+## iOS 6.1.3 compatibility — internal legacy build 33 (in progress)
+
+- Preserved the previously validated IPA locally; `local-ios9-stable32` marks its source checkpoint. Development branch `codex/ios6-compat`; no push/release.
+- Separate iOS 6 app/FFmpeg build passed, Mach-O minimum 6.1.3, ARMv7. USB installation on iPod5,1 / 6.1.3 succeeded. User confirmed Servers opens.
+- On-device diagnostics: FLAC/Vorbis/Opus each decoded nonzero PCM without error; the native cached-MP3 extension probe reports playable with one audio track.
+- All 13 `Tests/run-*.sh` host suites passed, plus pinned FFmpeg decoder smoke tests. Host tests do not emulate iOS 6 UIKit.
+- Default iOS 9 rebuild passed. Every packaged file except the executable was byte-identical to the saved IPA; full disassembly of the executable (excluding output pathname header) was identical. Signature/build metadata can differ. Physical iOS 9 revalidation requires that device.
+- The iOS 6 DeveloperDiskImage service rejected the available image with ImageMountFailed. Automated launch/screenshot services are unavailable; device reports are retrieved through Documents after manual launch. This does not affect app installation.
+- Still pending: SMB connection and large-library scan, audible playback, seeking/crossfade, downloads/offline restore, local iTunes/file playback, language/menu/search journeys and hardware remote events. Do not claim full compatibility until these checks complete.

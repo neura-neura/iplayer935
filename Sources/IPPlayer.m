@@ -79,11 +79,13 @@
                                                  selector:@selector(routeChanged:)
                                                      name:AVAudioSessionRouteChangeNotification
                                                    object:nil];
+#if !defined(IP_IOS6)
         MPRemoteCommandCenter *r = [MPRemoteCommandCenter sharedCommandCenter];
         [r.playCommand addTarget:self action:@selector(remotePlay:)];
         [r.pauseCommand addTarget:self action:@selector(remotePause:)];
         [r.nextTrackCommand addTarget:self action:@selector(remoteNext:)];
         [r.previousTrackCommand addTarget:self action:@selector(remotePrevious:)];
+#endif
         self.pcmTimer = [NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(tickPCM) userInfo:nil repeats:YES];
         [self attachTimeObserver];
         [self crossfadeSettingsChanged];
