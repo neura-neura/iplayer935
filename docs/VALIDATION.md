@@ -295,3 +295,14 @@ Pasan el verificador de330 entradas por catálogo, las pruebas de selección/per
 ## Preparación de la primera publicación
 
 El usuario aprobó los cambios de30 y las composiciones promocionales con datos privados difuminados. Se preparan README equivalentes en inglés, español y chino simplificado, sin el historial de compilaciones en la portada. IPA y paquete de fuentes/objetos correspondientes se distribuyen como adjuntos de la release. El historial público parte de una instantánea limpia; los puntos de restauración privados anteriores permanecen solo en la máquina de desarrollo.
+
+
+## Local library — internal build 31
+
+- ARMv7/ARM build and USB installation completed on the target iPod; version 1.1 remains local and unpublished.
+- New scanner host suite: nested and Unicode paths, overlapping roots, stable IDs, file removal, photo/hidden/partial exclusions and symlink avoidance passed.
+- Store host suite: immutable synthetic source, no SMB access during scan or metadata extraction, MP3 tags/artwork, unchanged refresh, favorite and URL persistence, deleted-file tombstones passed.
+- SQLite suite: local/native + manual + automatic cache union, deduplication, missing-file exclusion, metadata search, paging and cache eviction passed. Existing indexed library tests also passed.
+- Session/cache regression suite and localization runtime suite passed. All three catalogs have 341 keys with matching format arguments.
+- Physical validation of native iTunes asset playback, filesystem permissions and local automatic refresh is pending user confirmation. Installation does not establish those outcomes.
+- No GitHub push or release is part of this change.

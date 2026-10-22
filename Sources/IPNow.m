@@ -1,4 +1,5 @@
 #import "IPStrings.h"
+#import "IPLocalLibrary.h"
 #import "IPNow.h"
 #import "IPPlayer.h"
 #import "IPControlIcons.h"
@@ -204,7 +205,7 @@ static UIImage *IPPlaceholder(void) {
                          : album.length  ? album
                                          : @"";
     NSDictionary *profile = [[IPStore shared] profileForTrack:t];
-    self.origin.text=[NSString stringWithFormat:@"%@%@",[[IPStore shared]localURL:t]?IPL(@"En el iPod · "):@"",profile[@"name"]?:t[@"sourceName"]?:@""];
+    self.origin.text=[NSString stringWithFormat:@"%@%@",[[IPStore shared]localURL:t]?IPL(@"En el iPod · "):@"",IPProfileName(profile)?:t[@"sourceName"]?:@""];
     if(p.seeking)self.origin.text=[self.origin.text stringByAppendingString:IPL(@" · Buscando…")];
     if(p.crossfade.enabled)self.origin.text=[self.origin.text stringByAppendingString:p.crossfade.sessionSuspended?IPL(@" · Fundido suspendido"):IPL(@" · Fundido activo")];
     NSString *key = [NSString stringWithFormat:@"%@/%@", t[@"id"], t[@"artwork"]];

@@ -1,5 +1,6 @@
 #import "IPStrings.h"
 #import "IPStore.h"
+#import "IPLocalLibrary.h"
 #import "IPLibraryDB.h"
 #import "IPLibraryIndex.h"
 #import "IPSMB.h"
@@ -12,6 +13,7 @@
 #import <Security/Security.h>
 #if TARGET_OS_IPHONE
 #import <UIKit/UIKit.h>
+#import <MediaPlayer/MediaPlayer.h>
 #endif
 #import <ImageIO/ImageIO.h>
 
@@ -85,6 +87,10 @@ static NSData *IPSmallArtwork(NSData *data) {
 @property(nonatomic,strong,readwrite) IPLibraryDB *database;
 @property(nonatomic,readwrite) BOOL libraryLoaded;
 @property(nonatomic) BOOL libraryLoading;
+@property(nonatomic,strong) NSMutableDictionary *builtInLocalProfile;
+@property(nonatomic) BOOL localScanRunning;
+@property(nonatomic) BOOL observingLocalMedia;
+@property(nonatomic) NSTimeInterval lastLocalScan;
 @property(nonatomic) BOOL exampleProfileSeeded;
 @property(nonatomic,copy,readwrite) NSDictionary *preparationStatus;
 @property(nonatomic,strong) IPLibraryIndex *legacyIndex;
@@ -144,6 +150,21 @@ static NSData *IPSmallArtwork(NSData *data) {
 
 - (instancetype)init { return [IPStore sharedStore]; }
 
+- (NSMutableDictionary *)localProfile {
+    if(!self.builtInLocalProfile){
+        self.builtInLocalProfile=[@{@"id":IPLocalProfileID,@"endpointIdentity":IPLocalProfileID,@"isLocal":@YES,@"name":@"Local"}mutableCopy];
+    }
+    self.builtInLocalProfile[@"name"]=IPL(@"Local");return self.builtInLocalProfile;
+}
+- (void)localMediaChanged:(NSNotification *)notification {
+    dispatch_async(dispatch_get_main_queue(),^{self.lastLocalScan=0;[[NSNotificationCenter defaultCenter]postNotificationName:@"IPLocalLibraryChanged" object:self];});
+}
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter]removeObserver:self];
+#if TARGET_OS_IPHONE
+    if(self.observingLocalMedia)[[MPMediaLibrary defaultMediaLibrary]endGeneratingLibraryChangeNotifications];
+#endif
+}
 - (instancetype)initPrivate {
     NSArray *urls = [[NSFileManager defaultManager] URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask];
     NSURL *base = urls.firstObject ?: [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
@@ -408,6 +429,7 @@ static NSData *IPSmallArtwork(NSData *data) {
     if([NSThread isMainThread])update();else dispatch_sync(dispatch_get_main_queue(),update);
 }
 - (void)queryProfile:(NSDictionary *)profile mode:(NSString *)mode playlistIDs:(NSArray *)playlistIDs sort:(NSString *)sort query:(NSString *)query offset:(NSUInteger)offset limit:(NSUInteger)limit completion:(void (^)(NSArray *,NSUInteger,NSUInteger,NSArray *))completion {
+    if(IPIsLocalProfile(profile)){NSMutableDictionary *local=[profile mutableCopy];local[@"localCacheIDs"]=self.smartCache.cachedTrackIDs?:@[];profile=local;}
     if(!self.database){
         // While preparing SQLite (or if unavailable), reuse the usable legacy index.
         if(!self.legacyIndex){self.legacyIndex=[IPLibraryIndex new];[self.legacyIndex replaceTracks:self.tracks];}
@@ -497,6 +519,7 @@ static NSData *IPSmallArtwork(NSData *data) {
 
 - (NSMutableDictionary *)profileForTrack:(NSDictionary *)track {
     NSString *profileID = track[@"profileID"];
+    if([profileID isEqual:IPLocalProfileID])return self.localProfile;
     if (![profileID isKindOfClass:[NSString class]]) return nil;
     for (NSMutableDictionary *profile in self.profiles) {
         NSString *trackIdentity = [track[@"endpointIdentity"] length] ? track[@"endpointIdentity"] : profileID;
@@ -515,12 +538,21 @@ static NSData *IPSmallArtwork(NSData *data) {
 - (NSURL *)manualURLForTrack:(NSDictionary *)track {
     if(![track[@"id"]isKindOfClass:[NSString class]])return nil;NSURL *url=[self.cacheURL URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.media",IPStoreHash(track[@"id"])]];return [[NSFileManager defaultManager]fileExistsAtPath:url.path]?url:nil;
 }
-- (NSURL *)localURLForTrack:(NSDictionary *)track {return [self manualURLForTrack:track]?:[self.smartCache localURLForTrack:track];}
+- (NSURL *)localURLForTrack:(NSDictionary *)track {
+    if([track[@"profileID"]isEqual:IPLocalProfileID]){
+        if([track[@"unavailableRemote"]boolValue])return nil;
+        NSURL *url=[NSURL URLWithString:track[@"localURL"]?:@""];
+        if(url.isFileURL)return [[NSFileManager defaultManager]isReadableFileAtPath:url.path]?url:nil;
+        return [url.scheme isEqual:@"ipod-library"]?url:nil;
+    }
+    return [self manualURLForTrack:track]?:[self.smartCache localURLForTrack:track];
+}
 
 - (OSStatus)keychainStatusForPassword:(NSString *)password profileID:(NSString *)profileID deleting:(BOOL)deleting output:(NSString **)output {
     NSDictionary *query = @{(__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword,
                             (__bridge id)kSecAttrService: IPStoreKeychainService,
                             (__bridge id)kSecAttrAccount: profileID};
+    if([profileID isEqual:IPLocalProfileID])return errSecParam;
     if (deleting) return SecItemDelete((__bridge CFDictionaryRef)query);
     if (password) {
         NSDictionary *update = @{(__bridge id)kSecValueData: [password dataUsingEncoding:NSUTF8StringEncoding]};
@@ -562,6 +594,7 @@ static NSData *IPSmallArtwork(NSData *data) {
 }
 
 - (BOOL)deleteProfile:(NSMutableDictionary *)profile error:(NSError **)error {
+    if(IPIsLocalProfile(profile)){if(error)*error=IPStoreError(15,IPL(@"Local is a built-in library and cannot be edited or deleted."));return NO;}
     if (![NSThread isMainThread]) { __block BOOL result; __block NSError *mainError = nil; dispatch_sync(dispatch_get_main_queue(), ^{ result = [self deleteProfile:profile error:&mainError]; }); if (error) *error = mainError; return result; }
     if ([profile[@"isExample"]boolValue]) {
         [self.profiles removeObject:profile];
@@ -585,6 +618,7 @@ static NSData *IPSmallArtwork(NSData *data) {
 }
 
 - (BOOL)setEndpoint:(NSDictionary *)endpoint forProfileID:(NSString *)profileID error:(NSError **)error {
+    if([profileID isEqual:IPLocalProfileID]){if(error)*error=IPStoreError(15,IPL(@"Local is a built-in library and cannot be edited or deleted."));return NO;}
     if (![NSThread isMainThread]) { __block BOOL result; __block NSError *mainError = nil; dispatch_sync(dispatch_get_main_queue(), ^{ result = [self setEndpoint:endpoint forProfileID:profileID error:&mainError]; }); if (error) *error = mainError; return result; }
     [self cancelMetadata];
     NSMutableDictionary *profile = nil;
@@ -659,6 +693,7 @@ static NSData *IPSmallArtwork(NSData *data) {
 }
 
 - (void)scanProfile:(NSMutableDictionary *)profile progress:(IPStoreProgress)progress completion:(IPStoreCompletion)completion {
+    if(IPIsLocalProfile(profile)){[self scanLocalLibraryWithProgress:progress completion:completion];return;}
     if ([profile[@"isExample"]boolValue]) { [self finish:completion error:IPStoreError(14,IPL(@"This is a fictional example. Edit the profile with your own server details before connecting."))]; return; }
     [self cancelMetadata];
     NSDictionary *target = [profile copy];
@@ -802,6 +837,69 @@ static NSData *IPSmallArtwork(NSData *data) {
     });
 }
 
+
+- (NSArray *)localFileRoots {return [IPLocalLibrary fileRoots];}
+- (void)scanLocalLibraryWithProgress:(IPStoreProgress)progress completion:(IPStoreCompletion)completion {
+    if(!self.libraryLoaded){[self finish:completion error:IPStoreError(17,IPL(@"Cargando biblioteca guardada…"))];return;}
+    if(self.localScanRunning){if(completion)completion(nil);return;}
+#if TARGET_OS_IPHONE
+    if(!self.observingLocalMedia){
+        self.observingLocalMedia=YES;
+        [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(localMediaChanged:) name:MPMediaLibraryDidChangeNotification object:nil];
+        [[MPMediaLibrary defaultMediaLibrary]beginGeneratingLibraryChangeNotifications];
+    }
+#endif
+    self.localScanRunning=YES;[self sendProgress:progress message:IPL(@"Reading local music…")];
+    [self stopAutomaticMetadata];
+    // The filesystem and system media database are never traversed on the UI thread.
+    dispatch_async(self.queue,^{@autoreleasepool{
+        NSDictionary *result=[IPLocalLibrary scanRoots:[self localFileRoots] includeMediaLibrary:YES];
+        NSMutableDictionary *previous=[NSMutableDictionary new];
+        if(self.database)for(NSDictionary *t in [self.database recordsForProfileID:IPLocalProfileID])previous[t[@"id"]]=t;
+        // Older automatic-cache manifests have only hashes. Resolve them once in bounded pages,
+        // without materializing the main-thread models or re-downloading any file.
+        if(self.smartCache.hasLegacyEntries&&self.database){
+            NSArray *ids=self.database.trackIDs;
+            for(NSUInteger n=0;n<ids.count;n+=256){@autoreleasepool{
+                [self.smartCache rememberTracks:[self.database recordsForIDs:[ids subarrayWithRange:NSMakeRange(n,MIN((NSUInteger)256,ids.count-n))]]];
+            }}
+            [self.smartCache flush];
+        }
+        dispatch_async(dispatch_get_main_queue(),^{
+            NSArray *models=[self.tracks isKindOfClass:[IPTrackCollection class]]?[(IPTrackCollection *)self.tracks materializedTracks]:self.tracks;
+            for(NSDictionary *t in models)if([t[@"profileID"]isEqual:IPLocalProfileID])previous[t[@"id"]]=t;
+            NSMutableArray *records=[NSMutableArray new];NSMutableSet *found=[NSMutableSet new];BOOL changed=NO;
+            for(NSDictionary *fresh in result[@"tracks"]){
+                NSDictionary *old=previous[fresh[@"id"]];NSMutableDictionary *t=[fresh mutableCopy];[found addObject:t[@"id"]];
+                BOOL same=old&&[old[@"size"]isEqual:t[@"size"]]&&[old[@"modifiedAt"]isEqual:t[@"modifiedAt"]]&&[(old[@"localRevision"]?:@"")isEqual:t[@"localRevision"]?:@""];
+                if(!same)[self.decodedMetadata removeObjectForKey:t[@"id"]];
+                if(same){
+                    for(NSString *key in @[@"title",@"artist",@"album",@"genre",@"duration",@"trackNumber",@"artwork",@"metadataLoaded",@"metadataPending",@"metadataAutoVersion",@"artworkAutoVersion",@"metadataCacheState",@"metadataRetryAfter"])if(old[key])t[key]=old[key];
+                }
+                if(old[@"addedAt"])t[@"addedAt"]=old[@"addedAt"];
+                t[@"favorite"]=self.favoriteOverrides[t[@"id"]]?:old[@"favorite"]?:@NO;
+                if(![old isEqual:t])changed=YES;
+                [records addObject:t];
+            }
+            for(NSDictionary *old in previous.allValues)if(![found containsObject:old[@"id"]]){
+                NSMutableDictionary *t=[old mutableCopy];BOOL inaccessible=NO;
+                for(NSString *path in result[@"failedRoots"])if([old[@"path"]isEqual:path]||[old[@"path"]hasPrefix:[path stringByAppendingString:@"/"]]){inaccessible=YES;break;}
+                if(!inaccessible)t[@"unavailableRemote"]=@YES;
+                if(![old isEqual:t])changed=YES;[records addObject:t];
+            }
+            if(changed){
+                if([self.tracks isKindOfClass:[IPTrackCollection class]])[(IPTrackCollection *)self.tracks replaceProfileRecords:records previous:previous];
+                else {NSIndexSet *indices=[self.tracks indexesOfObjectsPassingTest:^BOOL(NSDictionary *t,NSUInteger i,BOOL *stop){return [t[@"profileID"]isEqual:IPLocalProfileID];}];[self.tracks removeObjectsAtIndexes:indices];[self.tracks addObjectsFromArray:records];}
+                self.trackLookup=nil;self.legacyIndex=nil;[self save];
+            }
+            self.lastScanWarning=[result[@"failedRoots"]count]?IPL(@"Some folders could not be read. Existing entries were kept."):nil;
+            self.localScanRunning=NO;self.lastLocalScan=[NSDate date].timeIntervalSince1970;
+            [self finish:completion error:nil];
+
+        });
+    }});
+}
+
 - (NSUInteger)metadataPendingCountForProfile:(NSDictionary *)profile {
     if(self.database)return [[self.database metadataStatus:profile][@"pending"]unsignedIntegerValue];
     __block NSUInteger count = 0;
@@ -815,6 +913,7 @@ static NSData *IPSmallArtwork(NSData *data) {
     if(!self.libraryLoaded || [profile[@"isExample"]boolValue])return;
     if(!profile[@"id"])return;
     if(!self.refreshingProfiles)self.refreshingProfiles=[NSMutableSet new];
+    if(IPIsLocalProfile(profile)){if(!self.localScanRunning&&[NSDate date].timeIntervalSince1970-self.lastLocalScan>=60)[self scanProfile:profile progress:nil completion:nil];return;}
     NSString *key=[@"library-refresh-" stringByAppendingString:[self identityForProfile:profile]];
     NSTimeInterval now=[NSDate date].timeIntervalSince1970;
     if([self.refreshingProfiles containsObject:profile[@"id"]] || now-[[NSUserDefaults standardUserDefaults]doubleForKey:key]<900)return;
@@ -885,7 +984,9 @@ static NSData *IPSmallArtwork(NSData *data) {
                     continue;
                 }
                 NSError *error=nil;NSMutableDictionary *tags=nil;NSURL *local=[self localURL:track];
-                if([ext isEqual:@"mp3"]){
+                if([track[@"mediaPersistentID"]length]){tags=[[IPLocalLibrary metadataForMediaID:track[@"mediaPersistentID"]]mutableCopy];}
+                else if(IPIsLocalProfile(target)&&!local){error=IPStoreError(16,IPL(@"The local file is no longer available."));}
+                else if([ext isEqual:@"mp3"]){
                     if(!local&&!connected){if(!client){NSMutableDictionary *settings=[target mutableCopy];settings[@"readTimeout"]=@5;client=[[IPSMB alloc]initWithProfile:settings password:[self passwordForProfile:target error:NULL]?:@""];}connected=[client connect:&error];}
                     NSFileHandle *file=local?[NSFileHandle fileHandleForReadingAtPath:local.path]:nil;
                     NSData *(^read)(uint64_t,NSUInteger)=^NSData *(uint64_t offset,NSUInteger length){
@@ -995,6 +1096,7 @@ static NSData *IPSmallArtwork(NSData *data) {
 }
 
 - (void)reimportPlaylistsForProfile:(NSMutableDictionary *)profile progress:(IPStoreProgress)progress completion:(IPStoreCompletion)completion {
+    if(IPIsLocalProfile(profile)){[self scanLocalLibraryWithProgress:progress completion:completion];return;}
     if ([profile[@"isExample"]boolValue]) { [self finish:completion error:IPStoreError(14,IPL(@"This is a fictional example. Edit the profile with your own server details before connecting."))]; return; }
     __block NSDictionary *target = nil;
     __block NSArray *trackSnapshot = nil;
@@ -1163,11 +1265,15 @@ static NSData *IPSmallArtwork(NSData *data) {
 
 - (BOOL)loadMetadataForTrack:(NSMutableDictionary *)track profile:(NSDictionary *)profile generation:(NSUInteger)generation {
     NSError *error = nil;
-    NSString *password = [self passwordForProfile:profile error:&error] ?: @"";
+    if([track[@"mediaPersistentID"]length]){NSDictionary *tags=[IPLocalLibrary metadataForMediaID:track[@"mediaPersistentID"]];if(tags){[track addEntriesFromDictionary:tags];return YES;}return NO;}
+    NSURL *local=[self localURLForTrack:track];
+    if(IPIsLocalProfile(profile)&&!local)return NO;
+    NSString *password = local?@"":[self passwordForProfile:profile error:&error] ?: @"";
     IPHTTPServer *server = [[IPHTTPServer alloc] initWithProfile:profile password:password
                                                             path:track[@"path"]
                                                             size:[track[@"size"] unsignedLongLongValue]];
     NSURL *url = nil;
+    if(local){server=nil;url=local;}
     for (NSUInteger attempt = 0; attempt < 40 && !url; attempt++) {
         @synchronized (self) { if (generation != self.metadataGeneration) return NO; }
         url = [server start:&error];
@@ -1245,6 +1351,7 @@ static NSData *IPSmallArtwork(NSData *data) {
         NSError *failure = nil;
         NSMutableArray *completedTracks = [NSMutableArray array];
         for (NSDictionary *track in requested) {
+            if([track[@"profileID"]isEqual:IPLocalProfileID])continue;
             if ([self manualURLForTrack:track]) continue;
             NSURL *automatic=[self.smartCache localURLForTrack:track];
             if(automatic){

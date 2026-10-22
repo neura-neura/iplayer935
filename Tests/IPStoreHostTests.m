@@ -3,12 +3,20 @@
 #import "../Sources/IPStore.h"
 #import "IPSmartCache.h"
 #import "IPLibraryDB.h"
+#import "IPLocalLibrary.h"
 #import "../Sources/IPSMB.h"
 #import "../Sources/IPHTTPServer.h"
 
 @interface IPStore (HostTestStorage)
 - (instancetype)initWithSupportURL:(NSURL *)supportURL;
 - (instancetype)initWithSupportURL:(NSURL *)supportURL deferred:(BOOL)deferred;
+@end
+
+@interface LocalTestStore : IPStore
+@property(nonatomic,strong) NSArray *testRoots;
+@end
+@implementation LocalTestStore
+- (NSArray *)localFileRoots {return self.testRoots?:@[];}
 @end
 
 static NSUInteger onceReads=0,coverReads=0;
@@ -304,6 +312,38 @@ int main(void) {
         IPStore *fallbackReload=[[IPStore alloc]initWithSupportURL:brokenRoot];
         NSCAssert([fallbackReload.tracks[0][@"favorite"]boolValue],@"bulk favorites did not persist with legacy fallback");
         puts("Bulk favorites: SQLite and JSON persistence, duplicate inputs and one notification passed");
+        NSURL *localRoot=[temporaryRoot URLByAppendingPathComponent:@"local-source"];
+        LocalTestStore *localStore=[[LocalTestStore alloc]initWithSupportURL:localRoot];
+        NSURL *musicRoot=[localRoot URLByAppendingPathComponent:@"TestMusic"];
+        [[NSFileManager defaultManager]createDirectoryAtURL:musicRoot withIntermediateDirectories:YES attributes:nil error:NULL];
+        NSURL *songURL=[musicRoot URLByAppendingPathComponent:@"A local song.mp3"];
+        [CoverMP3()writeToURL:songURL atomically:YES];localStore.testRoots=@[musicRoot];
+        NSMutableDictionary *localProfile=localStore.localProfile;
+        NSCAssert([localProfile[@"id"]isEqual:IPLocalProfileID]&&![localStore.profiles containsObject:localProfile],@"fixed local profile leaked into editable server list");
+        NSError *lockedError=nil;
+        NSCAssert(![localStore deleteProfile:localProfile error:&lockedError]&&lockedError.code==15,@"local source could be deleted");
+        NSCAssert(![localStore setEndpoint:@{@"host":@"anything"} forProfileID:IPLocalProfileID error:NULL],@"local source could be edited");
+        NSUInteger connectionsBeforeLocal=smbConnections;
+        __block BOOL localDone=NO;
+        [localStore scanProfile:localProfile progress:nil completion:^(NSError *error){NSCAssert(!error,@"local scan failed");localDone=YES;}];IPWaitForFlag(&localDone);[localStore flushPersistence];
+        NSCAssert(localStore.tracks.count==1&&smbConnections==connectionsBeforeLocal,@"local discovery tried SMB or lost files");
+        NSMutableDictionary *localTrack=localStore.tracks[0];NSString *localID=localTrack[@"id"];
+        NSCAssert([[localStore localURL:localTrack]isEqual:songURL]&&[localStore profileForTrack:localTrack]==localProfile,@"local playback URL/profile resolution failed");
+        [localStore setFavorite:YES forTrack:localTrack];[localStore ensureMetadataForProfile:localProfile priorityTracks:@[localTrack]];
+        NSDate *localEnd=[NSDate dateWithTimeIntervalSinceNow:5];
+        while([localStore metadataPendingCountForProfile:localProfile]&&localEnd.timeIntervalSinceNow>0)[[NSRunLoop mainRunLoop]runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:.02]];
+        [localStore stopAutomaticMetadata];[localStore flushPersistence];
+        NSCAssert([localTrack[@"title"]isEqual:@"Title"]&&[localTrack[@"artwork"]length]&&smbConnections==connectionsBeforeLocal,@"local MP3 tags/cover used network or were missing");
+        localDone=NO;[localStore scanProfile:localProfile progress:nil completion:^(NSError *e){localDone=YES;}];IPWaitForFlag(&localDone);[localStore flushPersistence];
+        NSCAssert([[localStore trackWithID:localID][@"favorite"]boolValue]&&[[localStore trackWithID:localID][@"artwork"]length],@"unchanged local refresh erased favorites or cached art");
+        IPStore *localReopen=[[IPStore alloc]initWithSupportURL:localRoot];
+        NSCAssert([[localReopen localURL:[localReopen trackWithID:localID]]isEqual:songURL],@"local URL did not survive reopening");
+        [[NSFileManager defaultManager]removeItemAtURL:songURL error:NULL];
+        localDone=NO;[localStore scanProfile:localProfile progress:nil completion:^(NSError *e){localDone=YES;}];IPWaitForFlag(&localDone);[localStore flushPersistence];
+        localDone=NO;[localStore queryProfile:localProfile mode:@"library" playlistIDs:nil sort:@"title" query:nil offset:0 limit:200 completion:^(NSArray *ids,NSUInteger total,NSUInteger pending,NSArray *records){NSCAssert(total==0,@"deleted local file remained in Local");localDone=YES;}];IPWaitForFlag(&localDone);
+        NSCAssert(![localStore localURL:[localStore trackWithID:localID]]&&[[localStore trackWithID:localID][@"favorite"]boolValue],@"missing local file lost its favorite or still had a playback URL");
+        NSCAssert(smbConnections==connectionsBeforeLocal,@"Local used a network connection");
+        puts("Local Store: immutable source, read-only discovery, offline MP3 tags/art, unchanged refresh, favorite/URL persistence, disappearance and no SMB passed");
         puts("IPStore host checks passed");
         [[NSFileManager defaultManager] removeItemAtURL:temporaryRoot error:NULL];
     }

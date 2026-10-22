@@ -42,11 +42,13 @@ Installing an update with the same app identifier preserves the app's data. Do n
 
 ## Connect your music
 
-1. Open **Servers**. New installations show only **Example Music Server**, a fictional profile that does not connect automatically. Tap it to enter your own server details, or use **+** to add a profile. Each field includes help.
+1. Open **Servers**. New installations include **Local** and **Example Music Server**, a fictional profile that does not connect automatically. Tap it to enter your own server details, or use **+** to add a profile. Each field includes help.
 2. Enter the server IP/hostname without `smb://`, the SMB share name, an optional folder relative to that share, and your SMB credentials. Example: host `music-server.local`, share `Music`, folder `Albums/Rock`. Use an account authorized for SMB; an SSH account may have different permissions.
 3. Save, then use **ⓘ → Test connection**. Open the server to browse its library. The app reads the music share without modifying server files.
 4. Use **⋯ → Refresh library and M3U** to force a scan. Automatic checks run when entering a server and while its library is visible, with a 15-minute interval between checks. They are background scans, not instant server notifications.
 5. Metadata and artwork are cached locally. Check or pause progress in **⋯ → Tag cache status**. Already checked, unchanged files are not reprocessed every time the app opens.
+
+**Local** is a fixed, read-only source for iTunes music, completed downloads/cache and readable audio files in the app’s Documents folder or `/var/mobile/Media`. Use file sharing or a file manager to copy music there. It refreshes in the background on entry and while visible (at most once per minute); **⋯ → Refresh local library** forces a scan. Unchanged tags and artwork remain cached. Protected or cloud-only iTunes items cannot be played.
 
 ## Playback and offline listening
 

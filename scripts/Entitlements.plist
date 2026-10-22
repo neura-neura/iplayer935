@@ -4,6 +4,8 @@
 <dict>
 	<key>application-identifier</key><string>org.neura.iplayer935</string>
 	<key>keychain-access-groups</key><array><string>org.neura.iplayer935</string></array>
+	<key>com.apple.security.exception.files.absolute-path.read-only</key>
+	<array><string>/var/mobile/Media/</string><string>/private/var/mobile/Media/</string></array>
 	<key>get-task-allow</key><true/>
 </dict>
 </plist>

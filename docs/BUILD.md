@@ -52,3 +52,6 @@ See upstream license information: https://ffmpeg.org/legal.html.
 ## Release assets
 
 Prebuilt IPA and matching source/relinking archives are distributed through [GitHub Releases](https://github.com/neura-neura/iplayer935/releases), rather than committed to Git. Download the IPA to `deliverables/iPlayer935.ipa` before using `scripts/install.sh`. The source archive contains all three README translations, dependency sources, app/SMB object files and the matching FFmpeg static libraries. The original pinned FFmpeg archive and dependency license notices also remain in the repository. Checksums accompany each release.
+
+
+The local library requests read-only access to `/var/mobile/Media/` and its canonical `/private/var/mobile/Media/` alias in the ad-hoc entitlements. Actual access depends on the device jailbreak configuration; Documents and MediaPlayer provide the regular app/system library paths. No write entitlement is added.

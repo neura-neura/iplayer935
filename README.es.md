@@ -42,11 +42,13 @@ Instalar una actualización con el mismo identificador conserva los datos de la 
 
 ## Conectar tu música
 
-1. Abre **Servidores**. En instalaciones nuevas solo aparece **Example Music Server**, un perfil ficticio que no se conecta automáticamente. Tócalo para introducir tus datos o usa **+** para agregar un perfil. Cada campo incluye ayuda.
+1. Abre **Servidores**. En instalaciones nuevas aparecen **Local** y **Example Music Server**, un perfil ficticio que no se conecta automáticamente. Tócalo para introducir tus datos o usa **+** para agregar un perfil. Cada campo incluye ayuda.
 2. Introduce la IP o el nombre del servidor sin `smb://`, el nombre del recurso compartido SMB, una subcarpeta opcional relativa a ese recurso y tus credenciales SMB. Ejemplo: host `music-server.local`, recurso `Music`, carpeta `Albums/Rock`. Usa una cuenta autorizada para SMB; una cuenta SSH puede tener permisos distintos.
 3. Guarda y usa **ⓘ → Probar conexión**. Abre el servidor para explorar su biblioteca. La app lee el recurso de música sin modificar archivos del servidor.
 4. Usa **⋯ → Actualizar biblioteca y M3U** para forzar un escaneo. Las revisiones automáticas se ejecutan al entrar al servidor y mientras su biblioteca está visible, con un intervalo de 15 minutos entre revisiones. Son escaneos en segundo plano, no notificaciones instantáneas del servidor.
 5. Los metadatos y las portadas se guardan en caché local. Consulta o pausa el progreso en **⋯ → Estado de la caché de etiquetas**. Los archivos ya revisados y sin cambios no se vuelven a procesar cada vez que abres la app.
+
+**Local** es una sección fija de solo lectura para música de iTunes, descargas/caché completas y archivos de audio accesibles en Documents de la app o `/var/mobile/Media`. Puedes copiar música allí mediante archivos compartidos o un administrador de archivos. Se actualiza en segundo plano al entrar y mientras está visible (como máximo una vez por minuto); **⋯ → Actualizar biblioteca local** fuerza un escaneo. Las etiquetas y portadas sin cambios conservan su caché. No se pueden reproducir canciones de iTunes protegidas o disponibles solo en la nube.
 
 ## Reproducción y escucha sin conexión
 

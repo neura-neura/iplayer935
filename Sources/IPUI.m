@@ -1,4 +1,5 @@
 #import "IPStrings.h"
+#import "IPLocalLibrary.h"
 #import "IPLanguageSettings.h"
 #import "IPAbout.h"
 #import "IPDiagnostics.h"
@@ -186,6 +187,8 @@ static void Message(UIViewController *v, NSString *s) {
         self.tableView.tableHeaderView = self.search.searchBar;
         self.definesPresentationContext = YES;
     }
+    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(localMediaChanged) name:@"IPLocalLibraryChanged" object:nil];
+    [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(localCacheChanged) name:@"IPLocalCacheChanged" object:nil];
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(preparationChanged) name:@"IPLibraryPreparationChanged" object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(reload)
@@ -220,6 +223,8 @@ static void Message(UIViewController *v, NSString *s) {
     if(self.profile){[S() refreshProfileIfNeeded:self.profile];[self prioritizeMetadata];}
     if(self.profile&&!self.refreshTimer)self.refreshTimer=[NSTimer scheduledTimerWithTimeInterval:60 target:self selector:@selector(checkLibraryChanges) userInfo:nil repeats:YES];
 }
+- (void)localMediaChanged {if(IPIsLocalProfile(self.profile))[self checkLibraryChanges];}
+- (void)localCacheChanged {if(IPIsLocalProfile(self.profile))[self reload];}
 - (void)checkLibraryChanges {if(self.profile&&self.visible)[S() refreshProfileIfNeeded:self.profile];}
 - (void)prioritizeMetadata {
     NSMutableArray *tracks=[NSMutableArray new];
@@ -245,12 +250,13 @@ static void Message(UIViewController *v, NSString *s) {
     BOOL ready=S().libraryLoaded;
     for(UIBarButtonItem *item in self.navigationItem.rightBarButtonItems)item.enabled=ready;
     if(!ready){
-        self.rows=[self.mode isEqual:@"servers"]?[S().profiles copy]:@[];
+        self.rows=[self.mode isEqual:@"servers"]?[@[S().localProfile] arrayByAddingObjectsFromArray:S().profiles]:@[];
         self.status=IPL(@"Cargando biblioteca guardada…");[self.tableView reloadData];return;
     }
     if([self.status isEqual:IPL(@"Cargando biblioteca guardada…")])self.status=nil;
     NSMutableArray *a = [NSMutableArray new];
     if ([self.mode isEqual:@"servers"]) {
+        [a addObject:S().localProfile];
         [a addObjectsFromArray:S().profiles];
         self.title = IPL(@"Servidores");
     } else if ([self.mode isEqual:@"playlists"]) {
@@ -259,7 +265,7 @@ static void Message(UIViewController *v, NSString *s) {
     } else {
         if(self.tableView.dragging||self.tableView.decelerating){self.needsReload=YES;[self performSelector:@selector(reload) withObject:nil afterDelay:.5];return;}
         ++self.queryGeneration;self.loadingPage=NO;
-        self.title=self.profile[@"name"]?:self.playlist[@"name"]?:([self.mode isEqual:@"favorites"]?IPL(@"Favoritos"):IPL(@"Descargas"));
+        self.title=IPProfileName(self.profile)?:self.playlist[@"name"]?:([self.mode isEqual:@"favorites"]?IPL(@"Favoritos"):IPL(@"Descargas"));
         NSUInteger limit=self.preservePosition?MAX((NSUInteger)200,self.rows.count):200;
         self.preservePosition=NO;
         [self fetchPage:0 limit:limit];
@@ -293,13 +299,13 @@ static void Message(UIViewController *v, NSString *s) {
     if([self.mode isEqual:@"servers"]&&[S().preparationStatus[@"running"]boolValue])return [NSString stringWithFormat:IPL(@"%@ · %@/%@ · Puedes usar la biblioteca"),S().preparationStatus[@"phase"],S().preparationStatus[@"completed"],S().preparationStatus[@"total"]];
     if (self.profile)
         return [NSString
-            stringWithFormat:IPL(@"%@ · %lu canciones"), self.profile[@"name"],
+            stringWithFormat:IPL(@"%@ · %lu canciones"), IPProfileName(self.profile),
                              (unsigned long)self.totalRows];
     if ([self.mode isEqual:@"servers"]) {
         NSString *last = [[NSUserDefaults standardUserDefaults] stringForKey:@"lastProfile"];
-        for (NSDictionary *p in S().profiles)
+        for (NSDictionary *p in [@[S().localProfile]arrayByAddingObjectsFromArray:S().profiles])
             if ([p[@"id"] isEqual:last])
-                return [IPL(@"Último usado: ") stringByAppendingString:p[@"name"]];
+                return [IPL(@"Último usado: ") stringByAppendingString:IPProfileName(p)];
     }
     if ([self.mode isEqual:@"downloads"])
         return
@@ -319,13 +325,13 @@ static void Message(UIViewController *v, NSString *s) {
     BOOL server = [self.mode isEqual:@"servers"], list = [self.mode isEqual:@"playlists"];
     c.textLabel.text =
         server ? [NSString
-                     stringWithFormat:@"%@%@", [r[@"default"] boolValue] ? @"★ " : @"", r[@"name"]]
+                     stringWithFormat:@"%@%@", [r[@"default"] boolValue] ? @"★ " : @"", IPProfileName(r)]
         : list ? r[@"name"]
                : [NSString stringWithFormat:@"%@%@ %@", [r[@"favorite"] boolValue] ? @"★ " : @"",
                                             [r[@"downloaded"] boolValue] ? @"↓" : @"",
                                             r[@"title"] ?: IPL(@"Sin título")];
-    c.detailTextLabel.text=server?[NSString stringWithFormat:@"%@/%@ · %@",r[@"host"],r[@"share"],r[@"username"]?:@""]:list?[NSString stringWithFormat:IPL(@"%lu canciones%@%@"),(unsigned long)[r[@"trackIDs"] count],r[@"sourceName"]?@" · ":@"",r[@"sourceName"]?:@""]:[NSString stringWithFormat:@"%@ · %@ · %@%@",r[@"artist"]?:@"",r[@"album"]?:@"",[S() profileForTrack:r][@"name"]?:r[@"sourceName"]?:IPL(@"Origen no disponible"),r[@"unsupportedReason"]?IPL(@" · ⚠ formato"):([r[@"unavailableRemote"] boolValue]?IPL(@" · sin acceso remoto"):@"")];
-    c.accessoryType = UITableViewCellAccessoryDetailButton;
+    c.detailTextLabel.text=server&&IPIsLocalProfile(r)?IPL(@"iTunes, downloads and local files"):server?[NSString stringWithFormat:@"%@/%@ · %@",r[@"host"],r[@"share"],r[@"username"]?:@""]:list?[NSString stringWithFormat:IPL(@"%lu canciones%@%@"),(unsigned long)[r[@"trackIDs"] count],r[@"sourceName"]?@" · ":@"",r[@"sourceName"]?:@""]:[NSString stringWithFormat:@"%@ · %@ · %@%@",r[@"artist"]?:@"",r[@"album"]?:@"",IPProfileName([S() profileForTrack:r])?:r[@"sourceName"]?:IPL(@"Origen no disponible"),r[@"unsupportedReason"]?IPL(@" · ⚠ formato"):([r[@"unavailableRemote"] boolValue]?IPL(@" · sin acceso remoto"):@"")];
+    c.accessoryType = server&&IPIsLocalProfile(r)?UITableViewCellAccessoryNone:UITableViewCellAccessoryDetailButton;
     return c;
 }
 - (void)tableView:(UITableView *)t didSelectRowAtIndexPath:(NSIndexPath *)p {
@@ -378,6 +384,7 @@ static void Message(UIViewController *v, NSString *s) {
 - (void)tableView:(UITableView *)t accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)p {
     if(!S().libraryLoaded||(NSUInteger)p.row>=self.rows.count)return;
     NSMutableDictionary *r = self.rows[p.row];
+    if([self.mode isEqual:@"servers"]&&IPIsLocalProfile(r))return;
     UIAlertController *a =
         [UIAlertController alertControllerWithTitle:r[@"name"] ?: r[@"title"]
                                             message:nil
@@ -454,7 +461,7 @@ static void Message(UIViewController *v, NSString *s) {
                block:^{
                    [S() setFavorite:![r[@"favorite"] boolValue] forTrack:r];
                }];
-        [self action:a
+        if(![r[@"profileID"]isEqual:IPLocalProfileID])[self action:a
                title:IPL(@"Descargar canción")
                block:^{
                    [self download:@[ r ]];
@@ -646,7 +653,7 @@ static void Message(UIViewController *v, NSString *s) {
         [self action:a title:IPL(@"Estado de la caché de etiquetas") block:^{IPMetadataProgress *progress=[IPMetadataProgress new];progress.profile=self.profile;[self.navigationController pushViewController:progress animated:YES];}];
         [self
             action:a
-             title:IPL(@"Actualizar biblioteca y M3U")
+             title:IPIsLocalProfile(self.profile)?IPL(@"Refresh local library"):IPL(@"Actualizar biblioteca y M3U")
              block:^{
                  self.status = IPL(@"Escaneando…");
                  [S() scanProfile:self.profile
@@ -657,6 +664,7 @@ static void Message(UIViewController *v, NSString *s) {
                      completion:^(NSError *e) {
                          self.status = nil;
                          [self reload];
+                         if(IPIsLocalProfile(self.profile)){Message(self,e?e.localizedDescription:S().lastScanWarning?:IPL(@"Local library updated. Tags and artwork are cached automatically."));return;}
                          NSUInteger skipped = 0;
                          for (NSDictionary *p in S().playlists)
                              if ([p[@"profileID"] isEqual:self.profile[@"id"]])
@@ -672,6 +680,7 @@ static void Message(UIViewController *v, NSString *s) {
                                              (unsigned long)skipped, S().lastScanWarning ?: @""]);
                      }];
              }];
+        if(!IPIsLocalProfile(self.profile)){
         [self action:a
                title:IPL(@"Probar conexión")
                block:^{
@@ -705,6 +714,7 @@ static void Message(UIViewController *v, NSString *s) {
                      }];
              }];
 
+        } else [self action:a title:IPL(@"Local music folders") block:^{Message(self,IPL(@"Local includes iTunes music, completed app downloads and readable audio files in this app's Documents folder or /var/mobile/Media. Copy files into Documents using file sharing, or into a music folder under /var/mobile/Media using a file manager. Photos and system folders are skipped. Protected or cloud-only iTunes items cannot be played. This built-in source cannot be edited or deleted."));}];
     }
     if (self.search) {
         [self action:a title:IPL(@"Seleccionar canciones") block:^{[self add];}];

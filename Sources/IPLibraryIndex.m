@@ -16,7 +16,7 @@ static NSString *Fold(NSString *s) {return [[s?:@"" stringByFoldingWithOptions:N
         if(replace)[self->_documents removeAllObjects];
         for(NSDictionary *t in snapshots){
             NSMutableDictionary *d=[NSMutableDictionary new];
-            for(NSString *k in @[@"id",@"profileID",@"endpointIdentity",@"favorite",@"downloaded",@"metadataPending",@"unsupportedReason",@"trackNumber",@"addedAt",@"modifiedAt",@"path"])if(t[k])d[k]=t[k];
+            for(NSString *k in @[@"id",@"profileID",@"endpointIdentity",@"favorite",@"downloaded",@"metadataPending",@"unsupportedReason",@"unavailableRemote",@"trackNumber",@"addedAt",@"modifiedAt",@"path"])if(t[k])d[k]=t[k];
             for(NSString *k in @[@"title",@"artist",@"album",@"genre"])d[k]=Fold(t[k]);
             d[@"search"]=[NSString stringWithFormat:@"%@ %@ %@ %@",d[@"title"],d[@"artist"],d[@"album"],d[@"genre"]];
             self->_documents[d[@"id"]]=[d copy];
@@ -26,16 +26,19 @@ static NSString *Fold(NSString *s) {return [[s?:@"" stringByFoldingWithOptions:N
 }
 - (void)rowsForProfile:(NSDictionary *)profile mode:(NSString *)mode playlistIDs:(NSArray *)playlistIDs sort:(NSString *)sort query:(NSString *)query completion:(void (^)(NSArray *,NSUInteger))completion {
     NSString *pid=[profile[@"id"] copy],*endpoint=[profile[@"endpointIdentity"] copy];
+    BOOL local=[profile[@"isLocal"]boolValue];NSArray *localIDs=[profile[@"localCacheIDs"]copy]?:@[];NSSet *cachedLocal=[NSSet setWithArray:localIDs];
     NSArray *order=[playlistIDs copy];NSString *q=[query copy]?:@"",*key=[sort copy]?:@"title",*kind=[mode copy]?:@"";
     dispatch_async(_queue,^{@autoreleasepool{
         NSString *normalized=Fold(q);
-        NSArray *cacheKey=@[pid?:@"",endpoint?:@"",kind,key,normalized,order?:@[]];
+        NSArray *cacheKey=@[pid?:@"",endpoint?:@"",kind,key,normalized,order?:@[],localIDs];
         NSDictionary *cached=self->_cache[cacheKey];
         NSArray *ids=cached[@"ids"];NSUInteger pending=[cached[@"pending"] unsignedIntegerValue];
         if(!ids){
             NSMutableArray *docs=[NSMutableArray new];NSSet *members=order?[NSSet setWithArray:order]:nil;
             for(NSDictionary *d in self->_documents.allValues){
-                if(pid && (![pid isEqual:d[@"profileID"]]||![endpoint isEqual:d[@"endpointIdentity"]]))continue;
+                BOOL own=[pid isEqual:d[@"profileID"]]&&[endpoint isEqual:d[@"endpointIdentity"]];
+                if(local){if(!((own&&![d[@"unavailableRemote"]boolValue])||[d[@"downloaded"]boolValue]||[cachedLocal containsObject:d[@"id"]]))continue;}
+                else if(pid&&!own)continue;
                 if(members && ![members containsObject:d[@"id"]])continue;
                 if([kind isEqual:@"favorites"]&&![d[@"favorite"] boolValue])continue;
                 if([kind isEqual:@"downloads"]&&![d[@"downloaded"] boolValue])continue;

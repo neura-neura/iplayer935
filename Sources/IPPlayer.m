@@ -1,4 +1,5 @@
 #import "IPStrings.h"
+#import "IPLocalLibrary.h"
 #import "IPPlayer.h"
 #import "IPHTTPServer.h"
 #import "IPSMB.h"
@@ -213,6 +214,11 @@
         return;
     }
     NSDictionary *profile = [store profileForTrack:self.track];
+    if(IPIsLocalProfile(profile)){
+        self.opening=NO;self.wantsPlayback=NO;
+        if([self restoreOutgoing])return;
+        if(self.changed)self.changed(IPL(@"The local file is no longer available."));[self publish];return;
+    }
     if (!profile || [self.track[@"unavailableRemote"] boolValue]) {
         if([self restoreOutgoing])return;
         if (self.changed)

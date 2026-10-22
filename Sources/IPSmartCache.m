@@ -36,7 +36,21 @@ static NSString *CacheKey(NSDictionary *track){
 - (void)saveManifest {NSDictionary *manifest=@{@"entries":self.entries,@"enabled":@(self.enabled),@"limit":@(self.limitBytes)};NSData *data=[NSJSONSerialization dataWithJSONObject:manifest options:0 error:NULL];if(data)[data writeToURL:[self.directory URLByAppendingPathComponent:@"manifest.json"] options:NSDataWritingAtomic error:NULL];}
 - (unsigned long long)used {unsigned long long n=0;for(NSDictionary *entry in self.entries.allValues)n+=[entry[@"size"]unsignedLongLongValue];return n;}
 - (void)updateStatus:(NSString *)error title:(NSString *)title bytes:(uint64_t)bytes total:(uint64_t)total {
-    self.available=[self.entries copy];self.status=@{@"enabled":@(self.enabled),@"bytes":@([self used]),@"limit":@(self.limitBytes),@"count":@(self.entries.count),@"running":@(title!=nil),@"title":title?:@"",@"received":@(bytes),@"total":@(total),@"error":error?:@""};
+    NSArray *before=self.cachedTrackIDs;
+    self.available=[self.entries copy];
+    if(![before isEqual:self.cachedTrackIDs])dispatch_async(dispatch_get_main_queue(),^{[[NSNotificationCenter defaultCenter]postNotificationName:@"IPLocalCacheChanged" object:self];});
+    self.status=@{@"enabled":@(self.enabled),@"bytes":@([self used]),@"limit":@(self.limitBytes),@"count":@(self.entries.count),@"running":@(title!=nil),@"title":title?:@"",@"received":@(bytes),@"total":@(total),@"error":error?:@""};
+}
+- (NSArray *)cachedTrackIDs {
+    NSMutableSet *ids=[NSMutableSet new];for(NSDictionary *entry in self.available.allValues)if([entry[@"trackID"]length])[ids addObject:entry[@"trackID"]];
+    return [ids.allObjects sortedArrayUsingSelector:@selector(compare:)];
+}
+- (BOOL)hasLegacyEntries {for(NSDictionary *entry in self.available.allValues)if(![entry[@"trackID"]length])return YES;return NO;}
+- (void)rememberTracks:(NSArray *)tracks {
+    NSMutableDictionary *matched=[NSMutableDictionary new];NSDictionary *available=self.available;
+    for(NSDictionary *t in tracks){NSString *key=CacheKey(t);if(available[key]&&![available[key][@"trackID"]length])matched[key]=t[@"id"];}
+    if(!matched.count)return;
+    dispatch_async(self.worker,^{for(NSString *key in matched){NSMutableDictionary *entry=[self.entries[key]mutableCopy];if(entry){entry[@"trackID"]=matched[key];self.entries[key]=entry;}}[self saveManifest];[self updateStatus:nil title:nil bytes:0 total:0];});
 }
 - (NSURL *)file:(NSString *)key {return [self.directory URLByAppendingPathComponent:[key stringByAppendingString:@".media"]];}
 - (NSURL *)localURLForTrack:(NSDictionary *)track {
@@ -67,7 +81,7 @@ static NSString *CacheKey(NSDictionary *track){
     dispatch_async(self.worker,^{@autoreleasepool{
         NSString *lastError=nil;
         for(NSDictionary *track in tracks){@autoreleasepool{
-            if(![self valid:generation])break;NSString *key=CacheKey(track);if(self.entries[key]||[track[@"downloaded"]boolValue]||track[@"unsupportedReason"]||[track[@"unavailableRemote"]boolValue])continue;
+            if(![self valid:generation])break;NSString *key=CacheKey(track);if([track[@"localURL"]length]||[track[@"profileID"]isEqual:@"local-library-v1"]||self.entries[key]||[track[@"downloaded"]boolValue]||track[@"unsupportedReason"]||[track[@"unavailableRemote"]boolValue])continue;
             NSDictionary *profile=byID[track[@"profileID"]];if(!profile||![track[@"endpointIdentity"]isEqual:profile[@"endpointIdentity"]?:profile[@"id"]])continue;
             NSMutableDictionary *settings=[profile mutableCopy];settings[@"readTimeout"]=@5;IPSMB *client=[[IPSMB alloc]initWithProfile:settings password:password?password(profile):@""];NSError *error=nil;
             if(![client connect:&error]){[client disconnect];lastError=IPL(@"Servidor no disponible; se conserva la caché anterior.");break;}
@@ -81,7 +95,7 @@ static NSString *CacheKey(NSDictionary *track){
                 NSTimeInterval now=[NSDate date].timeIntervalSince1970;if(now-reported>=1){[self updateStatus:nil title:track[@"title"]?:IPL(@"Canción") bytes:offset total:size];reported=now;}[NSThread sleepForTimeInterval:.1];
             }}
             @try{[file closeFile];}@catch(NSException *e){ok=NO;}[client disconnect];
-            if(ok&&offset==size&&[self valid:generation]&&[[NSFileManager defaultManager]moveItemAtURL:part toURL:[self file:key] error:&error]){self.entries[key]=@{@"size":@(size),@"used":@([NSDate date].timeIntervalSince1970)};[self saveManifest];[self updateStatus:nil title:nil bytes:0 total:0];}
+            if(ok&&offset==size&&[self valid:generation]&&[[NSFileManager defaultManager]moveItemAtURL:part toURL:[self file:key] error:&error]){self.entries[key]=@{@"size":@(size),@"used":@([NSDate date].timeIntervalSince1970),@"trackID":track[@"id"]};[self saveManifest];[self updateStatus:nil title:nil bytes:0 total:0];}
             else {[[NSFileManager defaultManager]removeItemAtURL:part error:NULL];if([self valid:generation]){lastError=IPL(@"Se interrumpió la descarga; las canciones completas siguen disponibles.");break;}}
         }}
         [self updateStatus:lastError title:nil bytes:0 total:0];

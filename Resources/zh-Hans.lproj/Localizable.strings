@@ -329,3 +329,14 @@
 "Folder inside the share, e.g. Albums/Rock. Leave empty to use the entire share." = "共享内的文件夹，例如 Albums/Rock。留空则使用整个共享。";
 "Enter your SMB account username. Leave empty only if the share allows guest access." = "输入 SMB 账户的用户名。仅在共享允许访客访问时留空。";
 "Enter that SMB account's password. Leave empty to keep the saved password, if any." = "输入该 SMB 账户的密码。留空将保留已保存的密码（如有）。";
+"Local" = "本地";
+"iTunes, downloads and local files" = "iTunes、下载和本地文件";
+"Reading local music…" = "正在读取本地音乐…";
+"Refresh local library" = "刷新本地音乐库";
+"Local music folders" = "本地音乐文件夹";
+"Local library updated. Tags and artwork are cached automatically." = "本地音乐库已更新。标签和封面将自动缓存。";
+"Local is a built-in library and cannot be edited or deleted." = "本地音乐库为内置功能，无法编辑或删除。";
+"The local file is no longer available." = "本地文件已不可用。";
+"This iTunes item is protected or has no playable local file." = "此 iTunes 项目受保护，或没有可播放的本地文件。";
+"Some folders could not be read. Existing entries were kept." = "部分文件夹无法读取。已保留现有条目。";
+"Local includes iTunes music, completed app downloads and readable audio files in this app's Documents folder or /var/mobile/Media. Copy files into Documents using file sharing, or into a music folder under /var/mobile/Media using a file manager. Photos and system folders are skipped. Protected or cloud-only iTunes items cannot be played. This built-in source cannot be edited or deleted." = "本地音乐库包含 iTunes 音乐、应用中已完成的下载，以及应用 Documents 文件夹或 /var/mobile/Media 中可读取的音频文件。可通过文件共享将文件复制到 Documents，或使用文件管理器复制到 /var/mobile/Media 下的音乐文件夹。扫描会跳过照片和系统文件夹。受保护或仅存在于云端的 iTunes 项目无法播放。此内置来源无法编辑或删除。";

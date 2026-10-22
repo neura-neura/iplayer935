@@ -11,6 +11,8 @@ typedef void (^IPStoreCompletion)(NSError * _Nullable error);
 
 + (instancetype)sharedStore;
 + (instancetype)shared;
+/** Built-in source, separate from editable SMB profiles. */
+@property(nonatomic,strong,readonly) NSMutableDictionary *localProfile;
 
 /** Mutable model dictionaries are exposed for the existing UIKit screens. Call save after edits. */
 @property (nonatomic, strong, readonly) NSMutableArray<NSMutableDictionary *> *profiles;
