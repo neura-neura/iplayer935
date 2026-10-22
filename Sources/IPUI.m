@@ -163,6 +163,11 @@ static void Message(UIViewController *v, NSString *s) {
         return;
     }
     [S() save];
+#if defined(IP_IOS6)
+    // The legacy navigation transition does not rebuild a previously loaded server list.
+    // Mark it dirty before popping, so its next viewWillAppear reads the saved profiles.
+    [[NSNotificationCenter defaultCenter]postNotificationName:@"IPStoreChanged" object:S()];
+#endif
     [self.navigationController popViewControllerAnimated:YES];
 }
 @end

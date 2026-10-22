@@ -326,3 +326,8 @@ El usuario aprobó los cambios de30 y las composiciones promocionales con datos 
 - Default iOS 9 rebuild passed. Every packaged file except the executable was byte-identical to the saved IPA; full disassembly of the executable (excluding output pathname header) was identical. Signature/build metadata can differ. Physical iOS 9 revalidation requires that device.
 - The iOS 6 DeveloperDiskImage service rejected the available image with ImageMountFailed. Automated launch/screenshot services are unavailable; device reports are retrieved through Documents after manual launch. This does not affect app installation.
 - Still pending: SMB connection and large-library scan, audible playback, seeking/crossfade, downloads/offline restore, local iTunes/file playback, language/menu/search journeys and hardware remote events. Do not claim full compatibility until these checks complete.
+
+
+### Legacy build 34 — profile list refresh
+
+Device inspection confirmed the user-created SMB profile was present in startup-profiles.json even though the list did not show it. The legacy editor now posts IPStoreChanged after a successful save and before popping, marking the covered list for reload in viewWillAppear. This branch compiles only with IP_IOS6; the default iOS 9 editor is unchanged. Legacy build and USB installation passed, and the persisted profile mirror was byte-identical before and after installation. User confirmation of the list/connection is pending.
