@@ -8,6 +8,9 @@ typedef void (^IPStoreCompletion)(NSError * _Nullable error);
 
 /** Offline library, account credentials, and explicitly requested SMB downloads. */
 @interface IPStore : NSObject
+#if defined(IP_IOS6)
+@property(atomic,readonly) BOOL legacyLibraryWritePending;
+#endif
 
 + (instancetype)sharedStore;
 + (instancetype)shared;

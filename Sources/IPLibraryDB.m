@@ -1,6 +1,9 @@
 #import "IPStrings.h"
 #import "IPLibraryDB.h"
 #import <sqlite3.h>
+#if defined(IP_IOS6)
+#import <string.h>
+#endif
 static NSString *Fold(NSString *s) {
     static NSLocale *locale;static NSCache *cache;static dispatch_once_t once;
     dispatch_once(&once,^{locale=[NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];cache=[NSCache new];cache.countLimit=2048;});
@@ -33,6 +36,15 @@ static void Bind(sqlite3_stmt *stmt, int i, id value) {
     else
         sqlite3_bind_text(stmt, i, [value ?: @"" UTF8String], -1, SQLITE_TRANSIENT);
 }
+#if defined(IP_IOS6)
+// instr() was introduced after the SQLite version shipped by iOS 6.
+static void LegacyInstr(sqlite3_context *context,int argc,sqlite3_value **argv) {
+    if(argc!=2||sqlite3_value_type(argv[0])==SQLITE_NULL||sqlite3_value_type(argv[1])==SQLITE_NULL){sqlite3_result_null(context);return;}
+    const char *haystack=(const char *)sqlite3_value_text(argv[0]),*needle=(const char *)sqlite3_value_text(argv[1]);
+    const char *match=haystack&&needle?strstr(haystack,needle):NULL;
+    sqlite3_result_int(context,match?(int)(match-haystack)+1:0);
+}
+#endif
 static BOOL NeedsTags(NSDictionary *t) {
     if (t[@"unsupportedReason"] || [t[@"unavailableRemote"] boolValue])
         return NO;
@@ -75,8 +87,19 @@ static BOOL NeedsTags(NSDictionary *t) {
             return self;
         }
         sqlite3_busy_timeout(_db, 5000);
+#if defined(IP_IOS6)
+        sqlite3_create_function(_db,"instr",2,SQLITE_UTF8,NULL,LegacyInstr,NULL,NULL);
+#endif
         sqlite3_create_collation(_db, "IPNATURAL", SQLITE_UTF8, NULL, Natural);
-        [self exec:@"PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA cache_size=-2048; "
+#if defined(IP_IOS6)
+        // SQLite 3.7.x repeatedly spills the same pages in large WAL transactions.
+        // A rollback journal keeps bulk scans bounded without weakening atomic commits.
+        [self exec:@"PRAGMA journal_mode=DELETE; PRAGMA journal_size_limit=8388608; PRAGMA synchronous=NORMAL; PRAGMA cache_size=2048;"];
+#endif
+        [self exec:
+#if !defined(IP_IOS6)
+                   @"PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA cache_size=-2048; "
+#endif
                    @"CREATE TABLE IF NOT EXISTS info (key TEXT PRIMARY KEY,json BLOB NOT NULL); "
                    @"CREATE TABLE IF NOT EXISTS tracks (id TEXT PRIMARY KEY, ordinal INTEGER NOT "
                    @"NULL, profile TEXT, endpoint TEXT, title TEXT COLLATE IPNATURAL, artist TEXT "
@@ -317,6 +340,15 @@ static BOOL NeedsTags(NSDictionary *t) {
 - (BOOL)commitState:(NSDictionary *)state tracks:(NSArray *)tracks IDs:(NSArray *)ids {
     [_lock lock];
     BOOL ok = [self exec:@"BEGIN IMMEDIATE"];
+#if defined(IP_IOS6)
+    BOOL bulk=tracks.count>=256;
+    // Rebuild secondary indexes once instead of maintaining 16 trees for each inserted row.
+    if(ok&&bulk){
+        for(NSString *key in @[@"title",@"artist",@"album",@"genre",@"recent",@"number"])
+            ok=ok&&[self exec:[NSString stringWithFormat:@"DROP INDEX IF EXISTS sort_%@; DROP INDEX IF EXISTS global_%@;",key,key]];
+        ok=ok&&[self exec:@"DROP INDEX IF EXISTS library_order; DROP INDEX IF EXISTS needed_tags; DROP INDEX IF EXISTS track_favorites; DROP INDEX IF EXISTS track_downloads;"];
+    }
+#endif
     if (ok)
         ok = [self writeTracks:tracks];
     if (ok && ![[self trackIDs] isEqual:ids]) {
@@ -347,6 +379,9 @@ static BOOL NeedsTags(NSDictionary *t) {
     if (!json || sqlite3_step(s) != SQLITE_DONE)
         ok = NO;
     sqlite3_finalize(s);
+#if defined(IP_IOS6)
+    if(ok&&bulk)ok=[self buildImportIndexes];
+#endif
     if (ok) {
         ok = [self exec:@"COMMIT"];
         if (!ok)

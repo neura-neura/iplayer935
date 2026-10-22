@@ -15,6 +15,9 @@
         return;
     }
     IPStore *s = [IPStore shared];
+#if defined(IP_IOS6)
+    if(s.legacyLibraryWritePending){dispatch_after(dispatch_time(DISPATCH_TIME_NOW,NSEC_PER_SEC),dispatch_get_main_queue(),^{[self write];});return;}
+#endif
     NSMutableDictionary *extensions = [NSMutableDictionary new];
     NSUInteger offline = 0, unsupported = 0, pending = 0;
     if(!s.database)for (NSDictionary *t in s.tracks) {

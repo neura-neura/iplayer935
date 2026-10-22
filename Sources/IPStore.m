@@ -142,9 +142,17 @@ static NSData *IPSmallArtwork(NSData *data) {
 @end
 
 @implementation IPStore {
+#if defined(IP_IOS6)
+    NSUInteger legacyPendingWrites;
+    BOOL legacyMetadataRetryScheduled;
+    NSMutableDictionary *legacyMetadataSummaries;
+#endif
     unsigned long long _cacheBytes;
 }
 
+#if defined(IP_IOS6)
+- (BOOL)legacyLibraryWritePending {return legacyPendingWrites>0;}
+#endif
 + (instancetype)sharedStore { static IPStore *store; static dispatch_once_t once; dispatch_once(&once, ^{ store = [[self alloc] initPrivate]; }); return store; }
 + (instancetype)shared { return [self sharedStore]; }
 
@@ -394,6 +402,9 @@ static NSData *IPSmallArtwork(NSData *data) {
         NSArray *models=[self.tracks isKindOfClass:[IPTrackCollection class]]?[(IPTrackCollection *)self.tracks changedTracks]:self.tracks;
         for (NSDictionary *value in models) [tracks addObject:IPStoreFreeze(value)];
         for (NSDictionary *value in self.playlists) [playlists addObject:IPStoreFreeze(value)];
+#if defined(IP_IOS6)
+        if(self.database&&tracks.count>=256)legacyPendingWrites++;
+#endif
         ids=[self.tracks isKindOfClass:[IPTrackCollection class]]?[(IPTrackCollection *)self.tracks trackIDs]:[self.tracks valueForKey:@"id"];
         limitSnapshot = self.cacheLimitBytes;
         snapshot = @{@"profiles":profiles, @"tracks":tracks, @"playlists":playlists, @"cacheLimitBytes":@(limitSnapshot),@"exampleProfileSeeded":@(self.exampleProfileSeeded)};
@@ -402,7 +413,16 @@ static NSData *IPSmallArtwork(NSData *data) {
     if ([NSThread isMainThread]) capture(); else dispatch_sync(dispatch_get_main_queue(), capture);
     NSURL *url = [self dataURL];
     dispatch_async(self.persistenceQueue, ^{
-        if(self.database.ready){BOOL ok=[self.database commitState:@{@"profiles":snapshot[@"profiles"],@"playlists":snapshot[@"playlists"],@"cacheLimitBytes":snapshot[@"cacheLimitBytes"],@"exampleProfileSeeded":snapshot[@"exampleProfileSeeded"]?:@NO} tracks:snapshot[@"tracks"] IDs:ids];if(ok)dispatch_async(dispatch_get_main_queue(),^{if([self.tracks isKindOfClass:[IPTrackCollection class]])[(IPTrackCollection *)self.tracks acknowledgeTracks:snapshot[@"tracks"]];});return;}
+        if(self.database.ready){BOOL ok=[self.database commitState:@{@"profiles":snapshot[@"profiles"],@"playlists":snapshot[@"playlists"],@"cacheLimitBytes":snapshot[@"cacheLimitBytes"],@"exampleProfileSeeded":snapshot[@"exampleProfileSeeded"]?:@NO} tracks:snapshot[@"tracks"] IDs:ids];
+#if defined(IP_IOS6)
+            dispatch_async(dispatch_get_main_queue(),^{
+                if([snapshot[@"tracks"]count]>=256&&legacyPendingWrites)legacyPendingWrites--;
+                if(ok&&[self.tracks isKindOfClass:[IPTrackCollection class]])[(IPTrackCollection *)self.tracks acknowledgeTracks:snapshot[@"tracks"]];
+            });
+#else
+            if(ok)dispatch_async(dispatch_get_main_queue(),^{if([self.tracks isKindOfClass:[IPTrackCollection class]])[(IPTrackCollection *)self.tracks acknowledgeTracks:snapshot[@"tracks"]];});
+#endif
+            return;}
         NSData *json = [NSJSONSerialization dataWithJSONObject:snapshot options:0 error:NULL];
         if (json) [json writeToURL:url options:NSDataWritingAtomic error:NULL];
     });
@@ -891,6 +911,9 @@ static NSData *IPSmallArtwork(NSData *data) {
 }
 
 - (NSUInteger)metadataPendingCountForProfile:(NSDictionary *)profile {
+#if defined(IP_IOS6)
+    if(self.legacyLibraryWritePending)return 0;
+#endif
     if(self.database)return [[self.database metadataStatus:profile][@"pending"]unsignedIntegerValue];
     __block NSUInteger count = 0;
     NSString *identity = [self identityForProfile:profile];
@@ -921,6 +944,9 @@ static NSData *IPSmallArtwork(NSData *data) {
 }
 - (NSDictionary *)metadataCacheStatusForProfile:(NSDictionary *)profile {
     NSAssert([NSThread isMainThread],@"Cache status uses main-thread models");
+#if defined(IP_IOS6)
+    if(self.legacyLibraryWritePending)return legacyMetadataSummaries[profile[@"id"]]?:@{@"total":@0,@"cached":@0,@"empty":@0,@"failed":@0,@"pending":@0,@"running":@NO,@"paused":@NO,@"current":@"",@"error":@""};
+#endif
     NSUInteger total=0,cached=0,empty=0,failed=0;NSString *identity=[self identityForProfile:profile];
     if(self.database){NSDictionary *counts=[self.database metadataStatus:profile];total=[counts[@"total"]unsignedIntegerValue];cached=[counts[@"cached"]unsignedIntegerValue];empty=[counts[@"empty"]unsignedIntegerValue];failed=[counts[@"failed"]unsignedIntegerValue];}
     else {
@@ -930,11 +956,22 @@ static NSData *IPSmallArtwork(NSData *data) {
     }
     }
     BOOL active=[self.automaticProfile isEqual:identity];
-    return @{@"total":@(total),@"cached":@(cached),@"empty":@(empty),@"failed":@(failed),@"pending":@(total-cached),
+    NSDictionary *result=@{@"total":@(total),@"cached":@(cached),@"empty":@(empty),@"failed":@(failed),@"pending":@(total-cached),
         @"running":@(active&&self.automaticRunning),@"paused":@([[NSUserDefaults standardUserDefaults]boolForKey:[self metadataPauseKey:profile]]),
         @"current":active?self.automaticCurrent?:@"":@"",@"error":active?self.automaticError?:@"":@""};
+#if defined(IP_IOS6)
+    if(!legacyMetadataSummaries)legacyMetadataSummaries=[NSMutableDictionary new];
+    if(profile[@"id"])legacyMetadataSummaries[profile[@"id"]]=result;
+#endif
+    return result;
 }
 - (void)ensureMetadataForProfile:(NSDictionary *)profile priorityTracks:(NSArray *)tracks {
+#if defined(IP_IOS6)
+    if(self.legacyLibraryWritePending){
+        if(!legacyMetadataRetryScheduled){legacyMetadataRetryScheduled=YES;dispatch_after(dispatch_time(DISPATCH_TIME_NOW,NSEC_PER_SEC),dispatch_get_main_queue(),^{legacyMetadataRetryScheduled=NO;[self ensureMetadataForProfile:profile priorityTracks:@[]];});}
+        return;
+    }
+#endif
     if(!self.libraryLoaded || [profile[@"isExample"]boolValue])return;
     if(!profile[@"id"])return;
     if([[NSUserDefaults standardUserDefaults]boolForKey:[self metadataPauseKey:profile]])return;

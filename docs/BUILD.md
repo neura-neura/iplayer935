@@ -64,3 +64,6 @@ The local library requests read-only access to `/var/mobile/Media/` and its cano
 The legacy target defines `IP_IOS6` and force-includes `IPLegacyCompatibility.h` only for Objective-C sources. All legacy implementations and call-site branches compile out of the default target. Legacy menus use UIAlertView/UIActionSheet, search uses UISearchBar, edge navigation uses a bounded pan gesture, remote events use UIResponder, and AVPlayer gain uses an AVAudioMix. FFmpeg is rebuilt with deployment 6.1.3 in a separate `build/codecs/ios-armv7-ios6` prefix. All app/vendor objects remain ARM, not Thumb.
 
 Legacy output, objects and license/source staging are under `build/ios6`; the stable target keeps its existing paths and version. Both IPA targets are local and unpublished during validation. Do not interpret successful installation or codec decoding as completed playback/UI validation.
+
+
+Legacy database regression: run `./Tests/run-ios6-database-tests.sh` to test against the actual SQLite 3.7.13 engine on the Mac. It caches a checksum-verified public-domain amalgamation from sqlite.org under ignored build/cache. This is a host database/Store test, not an iOS UIKit emulator. The legacy app uses iOS's SQLite, with rollback journaling and deferred UI reads during bulk commits; see https://www.sqlite.org/wal.html for the pre-3.11 WAL limitation.

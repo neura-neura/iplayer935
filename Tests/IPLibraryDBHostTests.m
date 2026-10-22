@@ -202,6 +202,15 @@ int main() {
         sqlite3_close(raw);
         NSCAssert(indexed && !temp,
                   @"title query rebuilt a temporary sort rather than using its persistent index");
+#if defined(IP_IOS6)
+        sqlite3_open(url.path.UTF8String,&raw);
+        sqlite3_prepare_v2(raw,"PRAGMA journal_mode",-1,&s,NULL);
+        NSCAssert(sqlite3_step(s)==SQLITE_ROW&&strcmp((const char *)sqlite3_column_text(s,0),"delete")==0,@"legacy bulk writes must not use amplifying WAL mode");
+        sqlite3_finalize(s);sqlite3_close(raw);
+        NSCAssert(![[NSFileManager defaultManager]fileExistsAtPath:[url.path stringByAppendingString:@"-wal"]],@"legacy import left a large WAL");
+        NSCAssert(Query(reopen,profile,@"library",nil,@"title",@"%",0,200,0).count==0,@"legacy substring search treated percent as wildcard");
+        puts("Legacy rollback journal, bounded WAL storage and literal substring search passed");
+#endif
         puts("SQLite persistence, paging, natural metadata sorts, search, filters, duplicate "
              "playlists, lazy full queue/session, incremental changes, transaction rollback and "
              "indexed query plan passed");

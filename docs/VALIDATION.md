@@ -331,3 +331,14 @@ El usuario aprobó los cambios de30 y las composiciones promocionales con datos 
 ### Legacy build 34 — profile list refresh
 
 Device inspection confirmed the user-created SMB profile was present in startup-profiles.json even though the list did not show it. The legacy editor now posts IPStoreChanged after a successful save and before popping, marking the covered list for reload in viewWillAppear. This branch compiles only with IP_IOS6; the default iOS 9 editor is unchanged. Legacy build and USB installation passed, and the persisted profile mirror was byte-identical before and after installation. User confirmation of the list/connection is pending.
+
+
+### Legacy build 36 — empty list after large scan / watchdog
+
+Two device crash reports show 0x8badf00d (resume watchdog), with the main thread waiting for the database lock while the persistence worker runs SQLite writes. AFC inspection found a 1,074,932,752-byte WAL. Its copied frame headers show a large uncommitted transaction repeatedly writing the same pages; committed state still had zero songs. This explains both the empty list and lost scans after termination.
+
+Legacy-only changes: rollback journal instead of old SQLite WAL amplification; 2048-page cache; rebuild secondary indexes once per bulk atomic commit; defer main-thread tag-status reads, automatic metadata startup and diagnostic reads until the queued bulk save finishes. The new target also registers a literal instr() scalar, unavailable in SQLite 3.7.13. The default iOS 9 path retains WAL, index update policy and metadata scheduling.
+
+`Tests/run-ios6-database-tests.sh` downloads a checksum-pinned public-domain SQLite 3.7.13 amalgamation from sqlite.org, then runs the full database and Store suites linked against that engine with IP_IOS6. Large import, ordering/search/paging, literal percent search, rollback atomicity, journal mode, lazy queues, favorites, local-source isolation and persistence tests passed. Default host database and Store suites also passed. Default iOS 9 rebuilt; disassembly differs from build 32 only in four assertion source-line constants moved by the conditional legacy code. Playback/library logic instructions otherwise remain unchanged.
+
+USB install of build 36 succeeded. On-device container inspection after launch showed no WAL, with the original server profiles preserved. Physical completion of the new scan and audible playback remain pending. No remote music files were modified and no GitHub push was made.
