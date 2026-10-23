@@ -399,3 +399,8 @@ USB installation of build 42 succeeded, preserving the existing app container. L
 The user confirmed automatic tag indexing completed and downloads worked. All 15 host test runners passed again; on-device codec diagnostics also confirm nonzero decoded PCM for FLAC, Ogg and Opus and a playable typed cached MP3. Current device diagnostics retain 25,156 tracks, three manual downloads and 29 complete smart-cache files. This does not independently prove every offline restoration or audible codec path.
 
 The ongoing feature matrix and remaining physical checks are recorded in [IOS6-VALIDATION.md](IOS6-VALIDATION.md). Three tiny synthetic fixtures (MP3/Ogg/Opus, about 98 KiB total) were copied into Documents for local-source playback testing, without overwriting any files or modifying the server. Physical playlist/favorite/search/sort, local audible formats and lock-screen/headphone checks were requested. No new app version or reinstall was necessary for this audit; no GitHub push was made.
+
+
+### Build 42 — additional user-confirmed hardware checks
+
+The user confirmed artist search, changing sort, favorites, multiple-song selection and adding songs to a new playlist. Locked-screen playback and the system pause/next controls also worked. Local MP3, Ogg and Opus synthetic fixtures played, including seeking within Ogg and Opus. Headphone controls and pause on unplug were explicitly not tested because headphones were unavailable; they remain pending. These confirmations require no new build or reinstall. The feature matrix now distinguishes these confirmed paths from remaining language, native iTunes, full offline-session and hardware accessory checks. Changes remain in local Git only.

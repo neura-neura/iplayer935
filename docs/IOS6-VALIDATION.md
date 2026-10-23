@@ -15,18 +15,18 @@ No iOS 6 release has been published. The iOS 9 default target remains unchanged.
 | Persistent tags and covers | Bounded indexing, cover repair, restart and pause regressions | User confirmed tag cache completed after build 42 |
 | MP3 transport | Native cached MP3 typed-link checks | User confirmed play, pause, next and seeking |
 | FLAC | Decoder, AudioQueue simulation and near-tail seek regressions | User confirmed seek forward/back and crossfade |
-| Ogg / Opus | Real decoding and seek/PCM regressions | On-device bundled fixtures decode nonzero PCM; audible local-file checks pending |
+| Ogg / Opus | Real decoding and seek/PCM regressions | On-device fixtures decode nonzero PCM; user confirmed local Ogg/Opus playback and seeking |
 | Crossfade | Curves, duration, flags and independent deck gains | User confirmed FLAC crossfade |
 | Persistent appearance | Isolated silver/black UIKit surfaces | User confirmed both variants and persistence |
 | Manual downloads | Download, persistence, cache promotion and separation regressions | User confirmed downloads work after tag caching finished |
 | Automatic cache | Queue prefetch, eviction, cancellation, complete-file and restart regressions | Device report contains 29 complete cached files; full Wi-Fi-off queue/session journey still needs explicit confirmation |
 | Queue / restoration / shuffle | Stable IDs, shuffle permutations, original-order restoration, position and lazy queue regressions | Full kill/relaunch/offline journey pending |
-| Search / metadata sorting | Database queries tested with old SQLite engine | Interactive search and sort check requested |
-| Favorites / multiselection | Bulk persistence, notifications, identities, deduplication regression | Interactive check requested |
-| Playlists / M3U | Reference resolution, imported order, duplicates, persistence regression | Imported playlist present; interactive create/edit/selection check requested |
-| Local | Filesystem discovery, unchanged refresh, missing files, read-only source, remote-cache exclusion regression | Three synthetic local fixtures copied for audible checks; no iTunes_Control/Music directory returned by AFC on this device |
+| Search / metadata sorting | Database queries tested with old SQLite engine | User confirmed artist search and changing sort |
+| Favorites / multiselection | Bulk persistence, notifications, identities, deduplication regression | User confirmed favorites and multiple-song selection |
+| Playlists / M3U | Reference resolution, imported order, duplicates, persistence regression | Imported playlist present; user confirmed creating a playlist and adding selected songs |
+| Local | Filesystem discovery, unchanged refresh, missing files, read-only source, remote-cache exclusion regression | User confirmed local MP3/Ogg/Opus fixtures play and Ogg/Opus seek; native iTunes item test still pending |
 | Three languages | Translation-key coverage, format placeholders, fallback and persisted preference regression | Full iOS 6 settings/tab/player journey pending |
-| Lock screen / background / headphones | Legacy remote event adapter and interruption/route handlers present | User test requested; not established by host tests |
+| Lock screen / background / headphones | Legacy remote event adapter and interruption/route handlers present | User confirmed locked-screen playback and system pause/next controls; headphone controls/disconnect not tested (no headphones available) |
 | AirPlay | Native MPVolumeView route control retained | Requires available receiver; untested |
 
 All 15 `Tests/run-*.sh` runners passed in this audit, including actual
@@ -39,22 +39,16 @@ or memory benchmarks.
 
 ## Pending device checks
 
-1. Search by artist, change sort, mark a favorite, create a playlist in the
-   Playlists tab, then select two songs and add them to that playlist. Check
-   both playlist membership and the Favorites tab.
-2. Lock during playback; test pause/next from system music controls. If available,
-   test headphone controls and pause on disconnect. Test AirPlay only when a
-   receiver is available.
-3. Open Local. `Compatibility Test.mp3`, `Compatibility Test.ogg` and
-   `Compatibility Test.opus` are synthetic short tones copied into the app's
-   Documents directory solely for this test. Play them at low volume and seek
-   within Ogg/Opus. These files are not player downloads or automatic cache.
-   No preexisting user media was replaced. Native iTunes media needs a separate
-   check with a song imported into this particular device.
-4. Switch Spanish/English/Simplified Chinese while playing; check tabs, menus,
+1. Test headphone controls and pause on disconnect when headphones become
+   available. Test AirPlay only when a receiver is available.
+2. Native iTunes media needs a separate check with a song imported into this
+   particular device. The three local synthetic test files remain in Documents;
+   they are not player downloads or automatic cache. No preexisting media was
+   replaced.
+3. Switch Spanish/English/Simplified Chinese while playing; check tabs, menus,
    player, persisted choice and uninterrupted audio. Restore the preferred
    language afterward.
-5. With known complete cached songs, disable Wi-Fi, advance, pause, fully quit
+4. With known complete cached songs, disable Wi-Fi, advance, pause, fully quit
    and reopen. Verify current title, position and queue; resume and advance.
    Reenable Wi-Fi afterward.
 
