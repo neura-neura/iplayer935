@@ -411,3 +411,8 @@ The user confirmed artist search, changing sort, favorites, multiple-song select
 The user confirmed that English/Simplified Chinese switches update tabs, menus and the player, preserve audio, and survive relaunch. The user also confirmed the current song, time and queue survive full termination/relaunch and can resume offline. Advancing offline remains unconfirmed: the user reported a connection-required message and suspected the attempted next song was not cached. Availability at that earlier time cannot be established from a later snapshot.
 
 Read-only AFC inspection subsequently retrieved the queue, position, cache manifest, file sizes and a local database copy into ignored build storage. In that snapshot the current MP3 and two upcoming MP3s had matching automatic cache keys and actual file lengths equal to both the manifest and track size. A targeted offline-next retry was requested against those named upcoming tracks. No cache files, server data, queue or preferences were changed. No rebuild was needed; changes remain in local Git.
+
+
+### Build 42 — offline next-track playback confirmed
+
+The user confirmed the targeted Wi-Fi-off test succeeded for both upcoming MP3s after their complete cache files were verified. Offline next-track playback is now physically confirmed alongside session restoration/resume, manual downloads and automatic-cache persistence. No new build or reinstall was necessary. Headphone controls/disconnect, AirPlay and native iTunes-imported media remain pending hardware checks; no full accessory compatibility claim is made. Evidence updates remain in local Git without a GitHub push.
