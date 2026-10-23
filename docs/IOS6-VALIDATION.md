@@ -1,10 +1,10 @@
-# iOS 6 compatibility validation (local development)
+# iOS 6 compatibility validation
 
 The iOS 6.1.3 target shares the existing library, playlists, favorites, queue,
 cache, translations and decoder implementations with iOS 9. Its UIKit,
 remote-event and AVPlayer volume adapters are isolated behind `IP_IOS6`.
 The presence of a shared implementation is not evidence of a physical test.
-No iOS 6 release has been published. The iOS 9 default target remains unchanged.
+The two release IPAs target their respective iOS versions separately. The iOS 9 default target retains its existing behavior.
 
 ## Current evidence — build 42
 
@@ -43,7 +43,7 @@ or memory benchmarks.
    available. Test AirPlay only when a receiver is available.
 
 For the historical fixes and per-build evidence, see [VALIDATION.md](VALIDATION.md).
-Keep updates in local Git until publication is explicitly requested again.
+Publication of both targets was subsequently authorized by the user; the validation limits above still apply.
 
 
 ## Offline advance confirmation

@@ -5,7 +5,7 @@
 
 [English](README.md) · [Español](README.es.md) · [简体中文](README.zh-CN.md)
 
-Reproductor de música nativo para **iPod touch 5 con iOS 9.3.5**. Reproduce tu música desde un servidor SMB, guarda canciones para escucharlas sin conexión y disfruta una interfaz inspirada en la app Música clásica del iPod.
+Reproductor de música nativo para **iPod touch 5 con iOS 9.3.5 o iOS 6.1.3**. Reproduce tu música desde un servidor SMB, guarda canciones para escucharlas sin conexión y disfruta una interfaz inspirada en la app Música clásica del iPod.
 
 ![Reproduciendo, biblioteca y fundido cruzado](docs/media/iplayer935-playback.png)
 
@@ -14,6 +14,9 @@ Reproductor de música nativo para **iPod touch 5 con iOS 9.3.5**. Reproduce tu 
 *Composiciones promocionales basadas en capturas reales del iPod. Los datos privados del servidor están difuminados.*
 
 ## Funciones
+
+- Biblioteca **Local** integrada para música de iTunes y archivos de audio accesibles; las descargas del reproductor y la caché automática se mantienen aparte.
+- Interfaz propia para iOS 6 con fondos plateado y negro persistentes; se conserva la interfaz de iOS 9.
 
 - Acceso SMB2/SMB3 a tu servidor de música, con varios perfiles y contraseñas guardadas en Keychain.
 - Reproducción de MP3, AAC/M4A, ALAC y WAV/AIFF/CAF mediante iOS; decodificación de FLAC, Ogg Vorbis y Opus mediante FFmpeg.
@@ -27,15 +30,21 @@ Reproductor de música nativo para **iPod touch 5 con iOS 9.3.5**. Reproduce tu 
 
 ## Descargar e instalar
 
-Descarga **iPlayer935.ipa** desde la [última release](https://github.com/neura-neura/iplayer935/releases/latest). Allí están las notas de la versión y los paquetes correspondientes de código fuente y objetos para reenlazado, en inglés.
+Descarga el paquete para tu versión de iOS desde la [última release](https://github.com/neura-neura/iplayer935/releases/latest). Allí están las notas de la versión y los paquetes correspondientes de código fuente y objetos para reenlazado, en inglés.
 
-El dispositivo compatible es un **iPod touch 5 (iPod5,1) con jailbreak, iOS 9.3.5 y ARMv7**, con **AppSync Unified** instalado. No se ha validado en otros dispositivos ni versiones de iOS.
+| Versión de iOS | Descarga | Instalación por USB |
+| --- | --- | --- |
+| iOS 9.3.5 | `iPlayer935.ipa` | `./scripts/install.sh` |
+| iOS 6.1.3 | `iPlayer935-iOS6.ipa` | `./scripts/install.sh --ios6` |
 
-Para instalar desde una Mac por USB, clona este repositorio, coloca el IPA descargado en `deliverables/iPlayer935.ipa`, conecta y desbloquea el iPod y acepta la confianza en la computadora si se solicita:
+El dispositivo compatible es un **iPod touch 5 (iPod5,1) con jailbreak, iOS 9.3.5 o 6.1.3 y ARMv7**, con **AppSync Unified** instalado. No se ha validado en otros dispositivos ni versiones de iOS.
+
+Para instalar desde una Mac por USB, clona este repositorio, coloca el IPA descargado en `deliverables/` conservando su nombre, conecta y desbloquea el iPod y acepta la confianza en la computadora si se solicita:
 
 ```sh
 brew install libimobiledevice ideviceinstaller
 ./scripts/install.sh
+# Para iOS 6.1.3: ./scripts/install.sh --ios6
 ```
 
 Instalar una actualización con el mismo identificador conserva los datos de la app. No la desinstales primero si quieres conservar tu biblioteca, ajustes y descargas.
@@ -62,7 +71,7 @@ Gestiona las descargas manuales en **Descargas**. Abre **Descargas → ⋯ → C
 
 La biblioteca usa índices SQLite, listas paginadas y trabajo en segundo plano para manejar colecciones grandes. El primer escaneo y el cacheado de etiquetas requieren tiempo, especialmente con una conexión lenta al servidor; puedes navegar y reproducir durante la preparación.
 
-La extensión no garantiza la compatibilidad del códec. WMA no es compatible. La reproducción FLAC, los saltos de tiempo y la escucha sin conexión se han comprobado en el iPod físico; Ogg/Opus con archivos reales todavía requieren más pruebas en el dispositivo. Consulta las [notas de validación](docs/VALIDATION.md) para conocer el comportamiento probado y sus límites.
+La extensión no garantiza la compatibilidad del códec. WMA no está soportado. En un iPod touch 5 con iOS 6.1.3 se comprobaron reproducción, avance dentro de FLAC y fundido cruzado, reproducción local y avance dentro de MP3/Ogg/Opus, música de iTunes, restauración y avance de cola sin conexión y los tres idiomas. Audífonos y AirPlay siguen sin probarse en iOS 6. Hace falta ampliar las pruebas a más dispositivos y archivos. Consulta las [notas de validación](docs/VALIDATION.md).
 
 ## Compilar y desarrollar
 
@@ -73,7 +82,7 @@ brew install llvm ldid libimobiledevice ideviceinstaller
 ./scripts/build.sh
 ```
 
-El resultado es `deliverables/iPlayer935.ipa`. Consulta las [instrucciones de compilación](docs/BUILD.md), [arquitectura](docs/ARCHITECTURE.md), [integración SMB](docs/SMB.md) y [localización](docs/LOCALIZATION.md). Los ejecutores de pruebas están en `Tests/`; algunos requieren las bibliotecas de códecs generadas por `scripts/codec-build.sh`.
+El resultado por defecto es `deliverables/iPlayer935.ipa`. Usa `./scripts/build.sh --ios6` para generar `deliverables/iPlayer935-iOS6.ipa` por separado. En iOS 6, las opciones usan un engranaje en lugar de **⋯**. Consulta las [instrucciones de compilación](docs/BUILD.md), [arquitectura](docs/ARCHITECTURE.md), [integración SMB](docs/SMB.md) y [localización](docs/LOCALIZATION.md). Los ejecutores de pruebas están en `Tests/`; algunos requieren las bibliotecas de códecs generadas por `scripts/codec-build.sh`.
 
 ## Créditos y dependencias
 

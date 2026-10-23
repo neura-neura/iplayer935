@@ -57,13 +57,13 @@ Prebuilt IPA and matching source/relinking archives are distributed through [Git
 The local library requests read-only access to `/var/mobile/Media/` and its canonical `/private/var/mobile/Media/` alias in the ad-hoc entitlements. Actual access depends on the device jailbreak configuration; Documents and MediaPlayer provide the regular app/system library paths. No write entitlement is added.
 
 
-## Separate iOS 6.1.3 target (local development)
+## Separate iOS 6.1.3 target
 
 `./scripts/build.sh --ios6` builds `deliverables/iPlayer935-iOS6.ipa`; `./scripts/install.sh --ios6` installs only onto iPod5,1 / iOS 6.1.3. The default commands continue to target iOS 9.3.5. Both use the same bundle ID so settings survive updates on the same device. The regular IPA is not overwritten by the iOS 6 build.
 
 The legacy target defines `IP_IOS6` and force-includes `IPLegacyCompatibility.h` only for Objective-C sources. All legacy implementations and call-site branches compile out of the default target. Legacy menus use UIAlertView/UIActionSheet, search uses UISearchBar, edge navigation uses a bounded pan gesture, remote events use UIResponder, and AVPlayer gain uses an AVAudioMix. FFmpeg is rebuilt with deployment 6.1.3 in a separate `build/codecs/ios-armv7-ios6` prefix. All app/vendor objects remain ARM, not Thumb.
 
-Legacy output, objects and license/source staging are under `build/ios6`; the stable target keeps its existing paths and version. Both IPA targets are local and unpublished during validation. Do not interpret successful installation or codec decoding as completed playback/UI validation.
+Legacy output, objects and license/source staging are under `build/ios6`; the stable target keeps its existing paths and version. Both IPA targets are distributed separately in Releases. See IOS6-VALIDATION.md for device-confirmed behavior and remaining accessory checks; installation or codec decoding alone does not establish playback/UI correctness.
 
 
 Legacy database regression: run `./Tests/run-ios6-database-tests.sh` to test against the actual SQLite 3.7.13 engine on the Mac. It caches a checksum-verified public-domain amalgamation from sqlite.org under ignored build/cache. This is a host database/Store test, not an iOS UIKit emulator. The legacy app uses iOS's SQLite, with rollback journaling and deferred UI reads during bulk commits; see https://www.sqlite.org/wal.html for the pre-3.11 WAL limitation.
@@ -71,3 +71,16 @@ Legacy database regression: run `./Tests/run-ios6-database-tests.sh` to test aga
 Legacy bulk scans prepare title sorting first. Other metadata sort indexes are created by the background query worker when first requested and retained on disk. The scan completion callback waits for its asynchronous save and propagates persistence errors; the UI reports saving progress during that phase.
 
 Legacy player gain regression: `./Tests/run-ios6-player-gain-tests.sh` exercises the isolated audio-mix adapter against macOS AVFoundation. It verifies deferred track loading and independent deck gain state; actual legacy audio output still requires device testing.
+
+
+To package the matching application sources, app/SMB objects and FFmpeg libraries
+for each release asset after building both targets:
+
+```sh
+./scripts/source-kit.sh
+./scripts/source-kit.sh --ios6
+```
+
+The outputs are `deliverables/iPlayer935-source.zip` and
+`deliverables/iPlayer935-iOS6-source.zip`. Each includes `relink/TARGET.txt`
+identifying its target and rebuild command. Match the source archive to its IPA.

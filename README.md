@@ -5,7 +5,7 @@
 
 [English](README.md) · [Español](README.es.md) · [简体中文](README.zh-CN.md)
 
-A native music player for **iPod touch 5 running iOS 9.3.5**. Stream your own music from an SMB server, keep songs available offline, and enjoy an interface inspired by the iPod's classic Music app.
+A native music player for **iPod touch 5 running iOS 9.3.5 or iOS 6.1.3**. Stream your own music from an SMB server, keep songs available offline, and enjoy an interface inspired by the iPod's classic Music app.
 
 ![Now Playing, library and crossfade](docs/media/iplayer935-playback.png)
 
@@ -14,6 +14,9 @@ A native music player for **iPod touch 5 running iOS 9.3.5**. Stream your own mu
 *Promotional compositions based on real iPod screenshots. Private server details are blurred.*
 
 ## Features
+
+- Built-in **Local** library for iTunes music and readable audio files; player downloads and automatic cache remain separate.
+- A dedicated iOS 6 interface with persistent silver/black player backgrounds; the iOS 9 interface is preserved.
 
 - SMB2/SMB3 access to your own music server, with multiple profiles and passwords stored in Keychain.
 - MP3, AAC/M4A, ALAC, WAV/AIFF/CAF playback through iOS; FLAC, Ogg Vorbis and Opus decoding through FFmpeg.
@@ -27,15 +30,21 @@ A native music player for **iPod touch 5 running iOS 9.3.5**. Stream your own mu
 
 ## Download and install
 
-Download **iPlayer935.ipa** from the [latest release](https://github.com/neura-neura/iplayer935/releases/latest). Release notes and matching source/relinking packages are provided there in English.
+Download the package for your iOS version from the [latest release](https://github.com/neura-neura/iplayer935/releases/latest). Release notes and matching source/relinking packages are provided there in English.
 
-The supported target is a **jailbroken iPod touch 5 (iPod5,1), iOS 9.3.5, ARMv7**, with **AppSync Unified** already installed. Other devices and iOS versions have not been validated.
+| iOS version | Download | USB install command |
+| --- | --- | --- |
+| iOS 9.3.5 | `iPlayer935.ipa` | `./scripts/install.sh` |
+| iOS 6.1.3 | `iPlayer935-iOS6.ipa` | `./scripts/install.sh --ios6` |
 
-To install from a Mac over USB, clone this repository, put the downloaded IPA at `deliverables/iPlayer935.ipa`, connect and unlock the iPod, and trust the computer if prompted:
+The supported target is a **jailbroken iPod touch 5 (iPod5,1), iOS 9.3.5 or 6.1.3, ARMv7**, with **AppSync Unified** already installed. Other devices and iOS versions have not been validated.
+
+To install from a Mac over USB, clone this repository, put the downloaded IPA in `deliverables/` with its original filename, connect and unlock the iPod, and trust the computer if prompted:
 
 ```sh
 brew install libimobiledevice ideviceinstaller
 ./scripts/install.sh
+# For iOS 6.1.3: ./scripts/install.sh --ios6
 ```
 
 Installing an update with the same app identifier preserves the app's data. Do not uninstall first if you want to keep your library, settings and downloads.
@@ -62,7 +71,7 @@ Manage manual downloads in **Downloads**. Open **Downloads → ⋯ → Automatic
 
 The library uses SQLite indexes, paginated lists and background work to handle large collections. Initial scanning and metadata caching still take time, especially over a slow server connection; browsing and playback remain available during preparation.
 
-A file extension does not guarantee codec compatibility. WMA is not supported. FLAC playback, seeking and offline playback have been checked on the physical iPod; real-world Ogg/Opus playback still needs broader device testing. See [validation notes](docs/VALIDATION.md) for tested behavior and limitations.
+A file extension does not guarantee codec compatibility. WMA is not supported. Playback, FLAC seeking/crossfade, local MP3/Ogg/Opus playback and seeking, native iTunes music, offline queue advancement/restoration and all three languages have been checked on an iPod touch 5 running iOS 6.1.3. Headphone controls/disconnection and AirPlay remain untested on iOS 6. Broader device and file-format coverage is still needed. See [validation notes](docs/VALIDATION.md) for tested behavior and limitations.
 
 ## Build and development
 
@@ -73,7 +82,7 @@ brew install llvm ldid libimobiledevice ideviceinstaller
 ./scripts/build.sh
 ```
 
-The output is `deliverables/iPlayer935.ipa`. See [build instructions](docs/BUILD.md), [architecture](docs/ARCHITECTURE.md), [SMB integration](docs/SMB.md) and [localization](docs/LOCALIZATION.md). Test runners are in `Tests/`; some require codec libraries built by `scripts/codec-build.sh`.
+The default output is `deliverables/iPlayer935.ipa`. Use `./scripts/build.sh --ios6` for the separate `deliverables/iPlayer935-iOS6.ipa`. On iOS 6, the settings icon is a gear instead of **⋯**. See [build instructions](docs/BUILD.md), [architecture](docs/ARCHITECTURE.md), [SMB integration](docs/SMB.md) and [localization](docs/LOCALIZATION.md). Test runners are in `Tests/`; some require codec libraries built by `scripts/codec-build.sh`.
 
 ## Credits and dependencies
 

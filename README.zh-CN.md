@@ -5,7 +5,7 @@
 
 [English](README.md) · [Español](README.es.md) · [简体中文](README.zh-CN.md)
 
-专为 **运行 iOS 9.3.5 的 iPod touch 5** 打造的原生音乐播放器。从自己的 SMB 服务器播放音乐，保存歌曲以便离线收听，体验受 iPod 经典“音乐”应用启发的界面。
+专为 **运行 iOS 9.3.5 或 iOS 6.1.3 的 iPod touch 5** 打造的原生音乐播放器。从自己的 SMB 服务器播放音乐，保存歌曲以便离线收听，体验受 iPod 经典“音乐”应用启发的界面。
 
 ![正在播放、音乐库与交叉淡化](docs/media/iplayer935-playback.png)
 
@@ -14,6 +14,9 @@
 *宣传合成图基于真实 iPod 截图制作。服务器隐私信息已模糊处理。*
 
 ## 功能
+
+- 内置**本地**音乐库，读取 iTunes 音乐和可访问的音频文件；播放器下载和自动缓存不显示在本地音乐库中。
+- iOS 6 专用界面，可保存银色或黑色播放器背景选择；保留原有 iOS 9 界面。
 
 - 通过 SMB2/SMB3 访问自己的音乐服务器，支持多个配置，密码保存在 Keychain 中。
 - 通过 iOS 播放 MP3、AAC/M4A、ALAC、WAV/AIFF/CAF；通过 FFmpeg 解码 FLAC、Ogg Vorbis 和 Opus。
@@ -27,15 +30,21 @@
 
 ## 下载与安装
 
-从[最新发布版本](https://github.com/neura-neura/iplayer935/releases/latest)下载 **iPlayer935.ipa**。该页面提供英文版本说明，以及对应的源码和重新链接所需文件包。
+请从[最新发布版本](https://github.com/neura-neura/iplayer935/releases/latest)下载适合 iOS 版本的安装包。该页面提供英文版本说明，以及对应的源码和重新链接所需文件包。
 
-支持的设备是 **已越狱的 iPod touch 5（iPod5,1），运行 iOS 9.3.5，使用 ARMv7**，且已安装 **AppSync Unified**。其他设备和 iOS 版本尚未验证。
+| iOS 版本 | 下载文件 | USB 安装命令 |
+| --- | --- | --- |
+| iOS 9.3.5 | `iPlayer935.ipa` | `./scripts/install.sh` |
+| iOS 6.1.3 | `iPlayer935-iOS6.ipa` | `./scripts/install.sh --ios6` |
 
-如需在 Mac 上通过 USB 安装，请克隆本仓库，将下载的 IPA 放到 `deliverables/iPlayer935.ipa`，连接并解锁 iPod；如有提示，请信任电脑：
+支持的设备是 **已越狱的 iPod touch 5（iPod5,1），运行 iOS 9.3.5 或 6.1.3，使用 ARMv7**，且已安装 **AppSync Unified**。其他设备和 iOS 版本尚未验证。
+
+如需在 Mac 上通过 USB 安装，请克隆本仓库，将下载的 IPA 保留原文件名放到 `deliverables/`，连接并解锁 iPod；如有提示，请信任电脑：
 
 ```sh
 brew install libimobiledevice ideviceinstaller
 ./scripts/install.sh
+# iOS 6.1.3：./scripts/install.sh --ios6
 ```
 
 使用相同应用标识符安装更新会保留应用数据。如需保留音乐库、设置和下载内容，请勿先卸载应用。
@@ -62,7 +71,7 @@ brew install libimobiledevice ideviceinstaller
 
 音乐库使用 SQLite 索引、分页列表和后台处理来管理大型音乐收藏。首次扫描和标签缓存仍需要时间，尤其是在服务器连接较慢时；准备过程中仍可浏览和播放。
 
-文件扩展名并不保证编解码器兼容性。不支持 WMA。FLAC 播放、进度跳转和离线播放已在实体 iPod 上验证；真实 Ogg/Opus 文件的播放仍需更广泛的设备测试。已验证的行为与限制详见[验证记录](docs/VALIDATION.md)。
+文件扩展名不能保证编解码器兼容性。不支持 WMA。已在运行 iOS 6.1.3 的 iPod touch 5 上验证播放、FLAC 定位和交叉淡化、本地 MP3/Ogg/Opus 播放和定位、iTunes 音乐、离线队列切歌与恢复，以及三种界面语言。iOS 6 的耳机控制、拔出耳机自动暂停和 AirPlay 尚未验证，仍需更多设备和文件测试。请参阅[验证记录](docs/VALIDATION.md)。
 
 ## 构建与开发
 
@@ -73,7 +82,7 @@ brew install llvm ldid libimobiledevice ideviceinstaller
 ./scripts/build.sh
 ```
 
-输出文件为 `deliverables/iPlayer935.ipa`。请参阅[构建说明](docs/BUILD.md)、[架构](docs/ARCHITECTURE.md)、[SMB 集成](docs/SMB.md)及[本地化说明](docs/LOCALIZATION.md)。测试脚本位于 `Tests/`；部分测试需要先通过 `scripts/codec-build.sh` 构建编解码器库。
+默认输出文件为 `deliverables/iPlayer935.ipa`。使用 `./scripts/build.sh --ios6` 可单独生成 `deliverables/iPlayer935-iOS6.ipa`。在 iOS 6 中，设置按钮使用齿轮图标，而非 **⋯**。请参阅[构建说明](docs/BUILD.md)、[架构](docs/ARCHITECTURE.md)、[SMB 集成](docs/SMB.md)及[本地化说明](docs/LOCALIZATION.md)。测试脚本位于 `Tests/`；部分测试需要先通过 `scripts/codec-build.sh` 构建编解码器库。
 
 ## 致谢与依赖
 
