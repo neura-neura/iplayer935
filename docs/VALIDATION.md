@@ -392,3 +392,10 @@ The legacy background callback now uses an expiring UIKit background task and as
 The SQLite 3.7.13 Store regression passes, including a new sustained 512-track test on a 25,154-record database that verifies no additional track materialization, no accumulating dirty tag saves, restart persistence, isolation of unsaved favorites, a responsive main thread with the writer deliberately stalled, and flush completion after the two-phase metadata commit. Existing tag/cover repair, pause/resume, favorites, local library and automatic cache regressions also pass. Default iOS 9 Store tests and both builds pass. Default iOS 9 disassembly comparison still shows only four assertion line-number constants, with behavior instructions unchanged from the stable build 32 checkpoint. ARMv7 iOS 6 build passes.
 
 USB installation of build 42 succeeded, preserving the existing app container. Long-running memory stability and completion of the user's remaining tags require a hardware run. The Wi-Fi-off/cache/session restoration test remains deferred until indexing is stable. No remote files or existing cache files were removed, and no GitHub push was made.
+
+
+### Build 42 follow-up — feature parity audit
+
+The user confirmed automatic tag indexing completed and downloads worked. All 15 host test runners passed again; on-device codec diagnostics also confirm nonzero decoded PCM for FLAC, Ogg and Opus and a playable typed cached MP3. Current device diagnostics retain 25,156 tracks, three manual downloads and 29 complete smart-cache files. This does not independently prove every offline restoration or audible codec path.
+
+The ongoing feature matrix and remaining physical checks are recorded in [IOS6-VALIDATION.md](IOS6-VALIDATION.md). Three tiny synthetic fixtures (MP3/Ogg/Opus, about 98 KiB total) were copied into Documents for local-source playback testing, without overwriting any files or modifying the server. Physical playlist/favorite/search/sort, local audible formats and lock-screen/headphone checks were requested. No new app version or reinstall was necessary for this audit; no GitHub push was made.
