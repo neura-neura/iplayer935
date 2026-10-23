@@ -423,3 +423,8 @@ The user confirmed the targeted Wi-Fi-off test succeeded for both upcoming MP3s 
 At the user's request, the Downloads MP3 `San Holo - YOU, You, you.mp3` was imported into Apple Music on the Mac and synchronized into the connected iOS 6.1.3 iPod's native music library via Finder. Modern macOS supplies the former iTunes functions through these two applications. The dedicated `iPlayer935 iOS 6 Test` playlist contains only this song; selected-playlist music synchronization was applied with videos and automatic free-space fill disabled. Other artist selections were checked as empty. This is a native media-library import, not a Documents copy or player download.
 
 Apple Music's device view confirms one track with title `YOU, You, you`, artist San Holo, album `TRUE LOVE IN A MADE UP WORLD (Deluxe)`, and duration 02:42. AFC confirms a 7,756,372-byte MP3 under iTunes_Control/Music. Audible playback, metadata/artwork and seeking from iPlayer935 Local were requested for physical validation. No app rebuild or reinstall was needed; no GitHub push was made.
+
+
+### Build 42 — native iTunes playback confirmed
+
+The user confirmed the imported San Holo song appears in iPlayer935 Local with metadata and artwork, plays and supports seeking. This completes the native iTunes media-library playback check on the connected iPod touch 5 running iOS 6.1.3. Headphone controls/disconnect and AirPlay remain pending because the required accessories have not been tested. No app change or reinstall was necessary, and no GitHub push was made.

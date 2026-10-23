@@ -24,7 +24,7 @@ No iOS 6 release has been published. The iOS 9 default target remains unchanged.
 | Search / metadata sorting | Database queries tested with old SQLite engine | User confirmed artist search and changing sort |
 | Favorites / multiselection | Bulk persistence, notifications, identities, deduplication regression | User confirmed favorites and multiple-song selection |
 | Playlists / M3U | Reference resolution, imported order, duplicates, persistence regression | Imported playlist present; user confirmed creating a playlist and adding selected songs |
-| Local | Filesystem discovery, unchanged refresh, missing files, read-only source, remote-cache exclusion regression | User confirmed local MP3/Ogg/Opus fixtures play and Ogg/Opus seek; native iTunes import verified in Apple Music device view; audible app playback pending |
+| Local | Filesystem discovery, unchanged refresh, missing files, read-only source, remote-cache exclusion regression | User confirmed local MP3/Ogg/Opus fixtures play and Ogg/Opus seek; User also confirmed native iTunes-imported song discovery, metadata/artwork, playback and seeking |
 | Three languages | Translation-key coverage, format placeholders, fallback and persisted preference regression | User confirmed English/Simplified Chinese tabs, menus and player, uninterrupted audio and persisted selection |
 | Lock screen / background / headphones | Legacy remote event adapter and interruption/route handlers present | User confirmed locked-screen playback and system pause/next controls; headphone controls/disconnect not tested (no headphones available) |
 | AirPlay | Native MPVolumeView route control retained | Requires available receiver; untested |
@@ -41,13 +41,6 @@ or memory benchmarks.
 
 1. Test headphone controls and pause on disconnect when headphones become
    available. Test AirPlay only when a receiver is available.
-2. At the user's request, `YOU, You, you` by San Holo was imported from the
-   Mac's Downloads MP3 through Apple Music/Finder (the current iTunes equivalent).
-   A dedicated single-song playlist was selected for music synchronization;
-   the device view lists its title, artist, album and 2:42 duration, and AFC
-   confirms the MP3 under iTunes_Control/Music. Discovery, metadata/artwork,
-   audible playback and seeking through iPlayer935 Local still need the user's
-   physical check. The three synthetic local test files remain in Documents.
 
 For the historical fixes and per-build evidence, see [VALIDATION.md](VALIDATION.md).
 Keep updates in local Git until publication is explicitly requested again.
@@ -60,3 +53,13 @@ both upcoming tracks played with Wi-Fi disabled. This closes the pending
 known-cached-track advance check; it does not imply that uncached songs are
 available offline. No app rebuild, cache replacement or queue changes were
 needed.
+
+
+## Native iTunes playback confirmation
+
+The user confirmed that `YOU, You, you` by San Holo appears in Local with its
+metadata and artwork, plays correctly and supports seeking. The MP3 was imported
+into this device's native music library through Apple Music/Finder, separately
+from the synthetic Documents fixtures and player downloads. Headphone controls,
+pause on unplug and AirPlay remain untested; no accessory compatibility claim
+is inferred from the other successful checks.
