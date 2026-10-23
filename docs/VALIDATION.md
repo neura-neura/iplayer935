@@ -404,3 +404,10 @@ The ongoing feature matrix and remaining physical checks are recorded in [IOS6-V
 ### Build 42 — additional user-confirmed hardware checks
 
 The user confirmed artist search, changing sort, favorites, multiple-song selection and adding songs to a new playlist. Locked-screen playback and the system pause/next controls also worked. Local MP3, Ogg and Opus synthetic fixtures played, including seeking within Ogg and Opus. Headphone controls and pause on unplug were explicitly not tested because headphones were unavailable; they remain pending. These confirmations require no new build or reinstall. The feature matrix now distinguishes these confirmed paths from remaining language, native iTunes, full offline-session and hardware accessory checks. Changes remain in local Git only.
+
+
+### Build 42 — languages and offline session confirmation
+
+The user confirmed that English/Simplified Chinese switches update tabs, menus and the player, preserve audio, and survive relaunch. The user also confirmed the current song, time and queue survive full termination/relaunch and can resume offline. Advancing offline remains unconfirmed: the user reported a connection-required message and suspected the attempted next song was not cached. Availability at that earlier time cannot be established from a later snapshot.
+
+Read-only AFC inspection subsequently retrieved the queue, position, cache manifest, file sizes and a local database copy into ignored build storage. In that snapshot the current MP3 and two upcoming MP3s had matching automatic cache keys and actual file lengths equal to both the manifest and track size. A targeted offline-next retry was requested against those named upcoming tracks. No cache files, server data, queue or preferences were changed. No rebuild was needed; changes remain in local Git.

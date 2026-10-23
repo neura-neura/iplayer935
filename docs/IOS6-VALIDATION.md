@@ -20,12 +20,12 @@ No iOS 6 release has been published. The iOS 9 default target remains unchanged.
 | Persistent appearance | Isolated silver/black UIKit surfaces | User confirmed both variants and persistence |
 | Manual downloads | Download, persistence, cache promotion and separation regressions | User confirmed downloads work after tag caching finished |
 | Automatic cache | Queue prefetch, eviction, cancellation, complete-file and restart regressions | Device report contains 29 complete cached files; full Wi-Fi-off queue/session journey still needs explicit confirmation |
-| Queue / restoration / shuffle | Stable IDs, shuffle permutations, original-order restoration, position and lazy queue regressions | Full kill/relaunch/offline journey pending |
+| Queue / restoration / shuffle | Stable IDs, shuffle permutations, original-order restoration, position and lazy queue regressions | User confirmed current song, position and queue survive full quit/relaunch and resume offline; next-track offline playback remains unconfirmed |
 | Search / metadata sorting | Database queries tested with old SQLite engine | User confirmed artist search and changing sort |
 | Favorites / multiselection | Bulk persistence, notifications, identities, deduplication regression | User confirmed favorites and multiple-song selection |
 | Playlists / M3U | Reference resolution, imported order, duplicates, persistence regression | Imported playlist present; user confirmed creating a playlist and adding selected songs |
 | Local | Filesystem discovery, unchanged refresh, missing files, read-only source, remote-cache exclusion regression | User confirmed local MP3/Ogg/Opus fixtures play and Ogg/Opus seek; native iTunes item test still pending |
-| Three languages | Translation-key coverage, format placeholders, fallback and persisted preference regression | Full iOS 6 settings/tab/player journey pending |
+| Three languages | Translation-key coverage, format placeholders, fallback and persisted preference regression | User confirmed English/Simplified Chinese tabs, menus and player, uninterrupted audio and persisted selection |
 | Lock screen / background / headphones | Legacy remote event adapter and interruption/route handlers present | User confirmed locked-screen playback and system pause/next controls; headphone controls/disconnect not tested (no headphones available) |
 | AirPlay | Native MPVolumeView route control retained | Requires available receiver; untested |
 
@@ -45,11 +45,13 @@ or memory benchmarks.
    particular device. The three local synthetic test files remain in Documents;
    they are not player downloads or automatic cache. No preexisting media was
    replaced.
-3. Switch Spanish/English/Simplified Chinese while playing; check tabs, menus,
-   player, persisted choice and uninterrupted audio. Restore the preferred
-   language afterward.
-4. With known complete cached songs, disable Wi-Fi, advance, pause, fully quit
-   and reopen. Verify current title, position and queue; resume and advance.
+3. Confirm advancing offline specifically to a known complete cached song.
+   The user confirmed restoration and resuming the current song, but the next
+   attempted track required the server. This alone does not identify a cache
+   defect: availability at that earlier time is unknown. A later read-only
+   inspection found the current queue's two upcoming MP3s both in the cache
+   manifest and on disk with the expected byte sizes. A targeted retry was
+   requested without rebuilding, replacing files or changing the queue.
    Reenable Wi-Fi afterward.
 
 For the historical fixes and per-build evidence, see [VALIDATION.md](VALIDATION.md).
