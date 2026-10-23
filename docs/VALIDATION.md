@@ -416,3 +416,10 @@ Read-only AFC inspection subsequently retrieved the queue, position, cache manif
 ### Build 42 — offline next-track playback confirmed
 
 The user confirmed the targeted Wi-Fi-off test succeeded for both upcoming MP3s after their complete cache files were verified. Offline next-track playback is now physically confirmed alongside session restoration/resume, manual downloads and automatic-cache persistence. No new build or reinstall was necessary. Headphone controls/disconnect, AirPlay and native iTunes-imported media remain pending hardware checks; no full accessory compatibility claim is made. Evidence updates remain in local Git without a GitHub push.
+
+
+### Build 42 — native iTunes library test song imported
+
+At the user's request, the Downloads MP3 `San Holo - YOU, You, you.mp3` was imported into Apple Music on the Mac and synchronized into the connected iOS 6.1.3 iPod's native music library via Finder. Modern macOS supplies the former iTunes functions through these two applications. The dedicated `iPlayer935 iOS 6 Test` playlist contains only this song; selected-playlist music synchronization was applied with videos and automatic free-space fill disabled. Other artist selections were checked as empty. This is a native media-library import, not a Documents copy or player download.
+
+Apple Music's device view confirms one track with title `YOU, You, you`, artist San Holo, album `TRUE LOVE IN A MADE UP WORLD (Deluxe)`, and duration 02:42. AFC confirms a 7,756,372-byte MP3 under iTunes_Control/Music. Audible playback, metadata/artwork and seeking from iPlayer935 Local were requested for physical validation. No app rebuild or reinstall was needed; no GitHub push was made.
